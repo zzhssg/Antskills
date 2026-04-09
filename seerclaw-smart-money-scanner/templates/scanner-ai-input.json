@@ -1,0 +1,31 @@
+{
+  "skill": "scanner",
+  "params": {
+    "coin": "BTC",
+    "timeWindow": "1h"
+  },
+  "summary": {
+    "totalAddresses": 5,
+    "longCount": 4,
+    "shortCount": 1,
+    "longPct": 80,
+    "netLongPosition": 4800000
+  },
+  "addresses": [
+    {
+      "address": "0x7a3f8b2c4d6e9f10",
+      "winRate": 86.4,
+      "direction": "LONG",
+      "leverage": "5x",
+      "positionSize": 480000,
+      "pnl7d": 482000,
+      "profitRatio": 3.2,
+      "entryPrice": 94250,
+      "unrealizedPnl": 86400,
+      "positionAge": "38min",
+      "recentResults": [1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+      "avgHoldMinutes": 47,
+      "totalTrades": 342
+    }
+  ]
+}

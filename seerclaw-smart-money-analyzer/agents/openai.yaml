@@ -1,0 +1,7 @@
+interface:
+  display_name: "SeerClaw Smart Money Analyzer"
+  short_description: "Analyze wallets, radar score, follow advice, and trades."
+  icon_small: "./assets/analyzer-small.svg"
+  icon_large: "./assets/analyzer-card.svg"
+  brand_color: "#8B5CF6"
+  default_prompt: "Use $seerclaw-smart-money-analyzer to build or refine the Analyzer flow for SeerClaw smart money."

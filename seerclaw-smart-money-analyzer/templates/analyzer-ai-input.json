@@ -1,0 +1,43 @@
+{
+  "skill": "analyzer",
+  "address": "0x7a3f8b2c4d6e9f10",
+  "profile": {
+    "totalTrades": 342,
+    "wins": 295,
+    "losses": 47,
+    "winRate": 86.4,
+    "pnl30d": 1420000,
+    "profitRatio": 3.2,
+    "maxDrawdown": -8.2,
+    "avgHoldMinutes": 47,
+    "avgLeverage": 4.8,
+    "avgWin": 18200,
+    "avgLoss": -8400,
+    "maxWin": 186000,
+    "maxLoss": -42000,
+    "preferredPairs": ["BTC", "ETH", "SOL"]
+  },
+  "positions": [
+    {
+      "pair": "BTC",
+      "direction": "LONG",
+      "leverage": "5x",
+      "entryPrice": 94250,
+      "positionSize": 480000,
+      "unrealizedPnl": 86400,
+      "unrealizedPct": 6.8
+    }
+  ],
+  "radar": {
+    "winRate": 86,
+    "profitRatio": 64,
+    "capital": 74,
+    "absPnl": 88,
+    "stability": 78,
+    "recentForm": 92
+  },
+  "radarGrade": "A+",
+  "radarScore": 80,
+  "recentResults": [1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+  "followDifficulty": "中等"
+}
