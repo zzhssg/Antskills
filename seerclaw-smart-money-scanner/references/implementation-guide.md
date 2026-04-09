@@ -27,7 +27,7 @@ function parseCandles(raw) {
 
 ```javascript
 function fmt(n) {
-  if (n == null || isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '—';
   const abs = Math.abs(n);
   const sign = n < 0 ? '-' : '';
   if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(1)}M`;
@@ -36,7 +36,23 @@ function fmt(n) {
 }
 ```
 
-## 4. AI Call Architecture
+## 4. Production-vs-Prototype Rule
+
+- **生产模式**：后端返回 tier、排序、markers、AI 或 AI 输入所需字段
+- **原型模式**：允许前端本地 mock candles / loading / sample 文案，但最终字段形状不能偏离生产契约
+
+## 5. AI Call Architecture
+
+### Preferred Production Path
+- 后端返回 `data.ai`
+- 前端直接合并渲染
+
+### Temporary Frontend Fallback
+如果后端暂未集成 AI：
+1. API 返回纯数据
+2. 前端构造 AI payload
+3. 调用模型拿到 `description/nicknames/consensus`
+4. 合并渲染
 
 ### Scanner AI input
 ```javascript
@@ -48,59 +64,65 @@ const aiInput = {
 };
 ```
 
-### Scanner render order
-1. 先渲染数值组件
-2. AI 返回后补 description / nicknames / consensus
-3. 受影响组件二次 render
+### Render Order
+1. 先渲染 S1 模板标题、S2 数值、S3 图、S4 骨架
+2. AI 返回后再补 description / nicknames / consensus
+3. `topNick` 支持 placeholder/skeleton
 
-## 5. AI Retry Logic
+## 6. AI Retry Logic
 
 - `_selfScore.score >= 70`：通过
-- `< 70`：把上次分数和原因追加给模型，再试一次
-- 最多 3 次，取最高分结果
+- `< 70`：把分数与原因追加到下一轮 prompt
+- 最多 3 次，取最高分
 - 单次 timeout 5 秒
 
-## 6. Loading State Rules
+## 7. Loading State Rules
 
 - 5 步动画
 - 每步 280ms
 - 最短展示 1600ms
-- 建议文案：连接 API → 扫描地址 → 计算胜率 → 检测共振 → 生成共识
+- Scanner steps：连接 API → 扫描地址 → 计算胜率 → 检测共振 → 生成共识
 
-## 7. Shared Color Tokens
+## 8. Layout & Interaction Rules
 
-```javascript
-const C = {
-  bg: '#0b0e18',
-  sidebar: '#0a0e1a',
-  card: '#111623',
-  cardBorder: 'rgba(255,255,255,0.08)',
-  text1: 'rgba(255,255,255,0.92)',
-  text2: 'rgba(255,255,255,0.72)',
-  text3: 'rgba(255,255,255,0.48)',
-  text4: 'rgba(255,255,255,0.28)',
-  up: '#0ecb81',
-  dn: '#f6465d',
-  yl: '#fcd535',
-};
-```
+- 左侧面板宽 260px
+- Scanner 地址卡 `.scan-card` hover：
+  - 金色边框
+  - 背景提亮
+  - 上浮 1px
+  - `点击分析→` 显现
+- 外链地址按钮必须 `stopPropagation`
+- 内容区出现动画：`fadeIn 0.35s`
 
-## 8. SmartMoneyChart Rules
+## 9. SmartMoneyChart Rules
 
+- `TradingView Lightweight Charts v4.1.3`
 - Scanner 不显示切币器
-- 允许切周期
-- 切周期后如果接口没返回 markers，复用旧 markers 重新映射
-- marker 时间戳映射到最近蜡烛
-- LONG 在 candle low 下方，SHORT 在 candle high 上方
+- 周期：`1m / 5m / 15m / 1h / 4h / 1D`
+- 切周期重新请求 chart
+- 若未返回 markers，则复用旧 markers 重新映射
+- 时间映射：最近 candle
+- Y 位置：LONG 在 low 下方，SHORT 在 high 上方
 
-## 9. Visualization Contracts
+## 10. Prototype Parity Notes
 
-- WL blocks：10 格，按近 10 次结果着色
-- Long/Short ratio bar：左绿右红，中间显示比例
-- marker popover：显示昵称、tier、方向、仓位、P/L、近况
+与 `smart-money-tracker.html` 对齐时：
+- 首次进入允许处于 sample mode
+- 点击 `开始分析` 后切 live mode
+- 原型里的 local sample 不等于生产真实数据
+- Scanner 图表通过 `coins={[coin]}` 或等效方式隐藏币种切换
 
-## 10. Output Validation Assets
+## 11. Output Validation Assets
 
 - 样例输入：`templates/scanner-ai-input.json`
 - 样例输出：`templates/scanner-ai-output.json`
-- 结构校验：`node scripts/validate-ai-output.js templates/scanner-ai-output.json`
+- 校验：`node scripts/validate-ai-output.js templates/scanner-ai-output.json`
+
+## 12. Global Rule Thresholds (Reference)
+
+### Tier
+- `>=85 传奇`
+- `>=75 精英`
+- `>=70 高手`
+- `>=60 进阶`
+- `<60 新手`

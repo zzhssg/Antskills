@@ -2,11 +2,15 @@
 
 ## 1. Product Structure
 
-Analyzer 回答的问题是：**这个地址值不值得跟？**
+Analyzer 回答的问题：**这个地址值不值得跟？**
 
-输入来自左侧栏：
+布局固定为：
+- 左侧参数面板 `260px`
+- 右侧结构化报告 `flex:1, max-width≈900px`
+
+输入：
 - 地址输入框
-- 预设地址列表
+- preset 地址列表
 - 来自 Scanner 的自动跳转
 
 输出包含 11 个模块：
@@ -26,122 +30,122 @@ Analyzer 回答的问题是：**这个地址值不值得跟？**
 
 ### Analyzer
 - 1 次 analysis = 1 个地址
-- 输出覆盖这个地址的全部相关币种
-- 支持从 Scanner 卡片自动带地址进入
+- 输出覆盖该地址全部币种
+- Scanner 卡片跳转 = 新计费事件
 
 ### Validation
 ```javascript
 const isValidAddress = (addr) => /^0x[a-fA-F0-9]{8,}$/.test(addr);
 ```
 - 非法地址时按钮禁用
-- 预设地址点击后可直接执行
+- preset 点击后可直接执行
 
 ## 3. Responsibility Split
 
-- **Backend**：profile、positions、account、radar、distributions、trades、markers、candles
+- **Backend**：profile、positions、account、radar、radarGrade、followDifficulty、suggestedSize、distributions、trades、markers、candles
 - **AI**：nickname、narrative、followAdvice
-- **Frontend**：followDifficulty、followGrade、tier、格式化、条件渲染、marker 补全、图表切币过滤
+- **Frontend**：格式化、条件渲染、marker 补全、切币过滤、hover 联动
 
-## 4. Frontend Rule Mappings
+> 说明：旧原型里某些 badge 可能由前端硬编码 sample 值；生产实现以 **后端返回** 为准。
 
-### Follow difficulty
-```javascript
-function getFollowDifficulty(avgHold, winRate, avgLev) {
-  if (avgHold < 30 || avgLev > 5) return '较高';
-  if (avgHold > 120 && winRate > 75) return '较低';
-  return '中等';
-}
-```
+## 4. Output Reading Order
 
-### Radar grade
-```javascript
-function getRadarGrade(score) {
-  if (score >= 85) return 'S';
-  if (score >= 75) return 'A+';
-  if (score >= 65) return 'A';
-  if (score >= 55) return 'B+';
-  if (score >= 45) return 'B';
-  return 'C';
-}
-```
+- **3 秒**：看人设、Radar、整体等级
+- **10 秒**：看当前持仓、难度、建议仓位
+- **30 秒**：看分布、活跃时段、交易明细
 
-### Tier mapping
-Analyzer marker/popover 里的 tier 仍然来自 `profile.winRate` 映射。
-
-## 5. Output Reading Order
-
-- **3 秒**：看这个人是谁、风格如何、雷达分多少
-- **10 秒**：看当前持仓、建议仓位、跟单难度
-- **30 秒**：看收益分布、活跃时段、交易明细
-
-## 6. Analyzer Component Contract
+## 5. Analyzer Component Contract
 
 ### A1 HeroCard
-- 左侧：头像、昵称、6 项关键指标、AI narrative
-- 右侧：RadarChart（280px）
+左侧：
+- Avatar
+- AI 昵称
+- tier badge
+- HyperbotLink
+- 6 指标横排：胜率 / 30D / 盈亏比 / MDD / 总笔数 / 均持仓
+- AI narrative（三段）
+
+右侧：
+- RadarChart(280px)
+- `AI 综合评估` 标签
 
 ### A2 PositionsTable
-- 展示当前仓位；无持仓时显示灰态空文案
-- `marginPct > 80` 时条形图转黄
+- 多仓位表格列：币种 / 方向 / 杠杆 / 入场价 / 仓位 / 盈亏 / 盈亏% / 清算价
+- header：脉动绿点 + `当前持仓` + 仓位数 + 总未实现盈亏
+- footer：`account value + margin usage + available balance`
+- 无持仓时显示 `当前无持仓`
+- `marginPct > 80` 时进度条变黄
 
 ### A3 FollowAdviceCard
-- 显示 `followDifficulty`、`followGrade`、AI followAdvice、suggestedSize
-- 建议文本必须给出条件和边界
+- 标题：`📍跟单建议`
+- pill：`followDifficulty` + `followGrade`
+- AI `followAdvice`
+- `suggestedSize`
+- 建议文本必须讲原因 / 当前时机 / 注意事项
 
 ### A4 Divider
 - 固定文案：`──── 数据佐证 ────`
 
 ### A5 ~ A9 Data Proof
 - A5：30 天日收益柱
-- A6：30 天累计曲线
-- A7：收益分布
+- A6：30 天累计收益曲线
+- A7：收益分布 + 底部 `avgWin/avgLoss/maxWin/maxLoss`
 - A8：持仓时长分布
-- A9：分析面板 + 活跃时段热力条
+- A9：不与 Hero 重复的 KV + UTC 活跃时段热力图
 
 ### A10 SmartMoneyChart
-- 高度约 340px
+- 高度约 `340px`
 - 默认 coin = `preferredPairs[0]`
-- 支持切 coin 与切周期
-- marker 必须按当前 coin 过滤
+- 可切 `preferredPairs`
+- 可切周期：`1m / 5m / 15m / 1h / 4h / 1D`
+- markers 必须按当前 coin 过滤
 
 ### A11 TradesTable
-- 支持 `ALL/BTC/ETH/SOL` 筛选
+- 筛选：`ALL / BTC / ETH / SOL`
 - 每页 10 条
-- 列：time / coin / dir / lev / entry / exit / pnl / pnl% / hold / W/L
+- 列：`# / time / coin / dir / lev / entry / exit / pnl / pnl% / hold / W/L`
+- row hover：高亮 + 与图表联动
 
-## 7. Conditional Rendering Rules
+## 6. Conditional Rendering Rules
 
-- `positions.length === 0`：隐藏表格，显示 `当前无持仓`
-- `totalTrades < 10`：补 `数据样本量有限`
-- `profitRatio === null`：显示 `∞` 或 `—`
-- `recent7dWinRate === null`：显示 `—`
-- `avgLeverage === null`：显示 `—`
-- marker `lev === null`：popover 隐藏或显示 `—`
+- `positions.length === 0` → A2 空态
+- `totalTrades < 10` → narrative / UI 提示 `数据样本量有限`
+- `profitRatio === null` → `∞` 或 `—`
+- `recent7dWinRate === null` → `—`
+- `avgLeverage === null` → `—`
+- marker `lev === null` → popover 隐藏或显示 `—`
 
-## 8. Marker and Chart Behavior
+## 7. Marker and Chart Behavior
 
 ### Analyzer
 - 切周期：`GET /api/chart?coin=X&interval=Y&address=Z`
 - 切币：`GET /api/chart?coin=NEW&interval=Y&address=Z`
-- 用新返回的 candles + markers 替换当前图表数据
+- 用新返回的 candles + markers 替换图表
 - marker popover 需要补 `nick/tier/wr/pr/res`
+- TradesTable row hover 要能高亮对应交易 / marker
 
-## 9. Error Handling
+## 8. Error Handling
 
 - `404 NO_TRADES`：`该地址在过去30天内无交易记录`
-- `502 UPSTREAM_ERROR`：数据源暂时不可用
-- AI 失败：保留数值部分，文案回退到安全占位
+- `502 UPSTREAM_ERROR`：`数据源暂时不可用，请稍后重试`
+- `400 INVALID_ADDRESS`：前端先禁用按钮，避免把错误留给后端
+- AI 失败：保留数值渲染，文字回退安全占位
 
-## 10. Quality Standards For AI Text
+## 9. Quality Standards For AI Text
 
 ### Analyzer copy
-- `nickname`：2-3 字，能看出交易风格
-- `narrative`：先给风格判断，再翻译数字，再谈是否值得跟
-- `followAdvice`：有条件、有风险边界，不能只给结论
+- `nickname`：2-3 字，像人物标签
+- `narrative`：3 段式，先画像再翻译数字再讲现状
+- `followAdvice`：3-5 句，含难度原因 / 操作建议 / 当前时机 / 注意事项
 
-## 11. Required Footer
+## 10. Required Footer
 
 ```text
 数据源 Hyperliquid API
 ⚠ 不构成投资建议
 ```
+
+## Retry Interaction Contract
+
+- 上游异常或无结果空态都要使用 **错误卡 / 提示卡 + retry button** 的组合
+- retry button 的行为是：保留当前输入参数，重新执行当前 skill

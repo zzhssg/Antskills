@@ -2,44 +2,60 @@
 
 ## 1. WL Blocks
 
-- 10 格横向小块
-- 胜单用绿，负单用红，未知用灰
-- 用于地址卡快速判断近况
+- 最近 10 笔已平仓结果
+- 左早右近
+- W=绿，L=红
+- 前 7 个 opacity `0.4`
+- 后 3 个 opacity `1.0`
+- 不足 10 笔不补空位
 
 ## 2. Long/Short Ratio Bar
 
-- 左侧绿色表示 long
-- 右侧红色表示 short
-- 中间显示比例文本
-- 用在 ConsensusCard
+- 左绿右红
+- 绿宽 = `longPct%`
+- 红宽 = `100-longPct%`
+- 两端文字：`多 X%` / `Y% 空`
+- 高度 10px，圆角 5px
 
 ## 3. K-line Trade Markers
 
 ### Architecture Layers
 - TradingView candlestick layer
+- Native arrow markers
 - DOM marker overlay
 - hover popover
 
 ### Time Mapping
-- 用最近 candle 对齐 marker 时间戳
+- `nearest candle` 映射
+- 多 marker 同蜡烛时垂直堆叠
 
 ### Marker Dot Styles
-- LONG：绿色渐变
-- SHORT：红色渐变
-- tier / avatar / leverage mini badge 可叠加
+- 22px avatar 圆点
+- LONG：绿渐变 + 方向色环
+- SHORT：红渐变 + 方向色环
+- 右下角 mini leverage badge
 
 ### Hover Popover
 - 最小宽度 240px
-- 展示昵称、tier、方向、仓位、P/L、近况
+- 字段：
+  - 头像 + 昵称 + tier + 胜率
+  - LONG/SHORT + 杠杆
+  - 入场价 / 仓位
+  - 盈亏 / 盈亏%
+  - 盈亏比（可选）
+  - 开仓时间 ago
+  - WL × 10
+- 样式：圆角10px / blur / fadeIn / 金色边框
 
 ## 4. Shared Rendering Utilities
 
 ### Hash Avatar
-- 基于地址生成稳定头像
+- 确定性 hash→SVG / canvas
 
 ### Direction Color Helper
 - long → green
 - short → red
 
 ### HyperbotLink Component
-- 地址文本支持跳转
+- 地址文本可跳外链
+- 必须 `stopPropagation`

@@ -15,17 +15,23 @@
     "avgLoss": -8400,
     "maxWin": 186000,
     "maxLoss": -42000,
-    "preferredPairs": ["BTC", "ETH", "SOL"]
+    "preferredPairs": [
+      "BTC",
+      "ETH",
+      "SOL"
+    ]
   },
   "positions": [
     {
       "pair": "BTC",
-      "direction": "LONG",
-      "leverage": "5x",
-      "entryPrice": 94250,
-      "positionSize": 480000,
-      "unrealizedPnl": 86400,
-      "unrealizedPct": 6.8
+      "dir": "LONG",
+      "lev": "5x",
+      "entry": 94250,
+      "size": 480000,
+      "pnl": 86400,
+      "pct": 6.8,
+      "liq": 88400,
+      "marginUsed": 96000
     }
   ],
   "radar": {
@@ -38,6 +44,17 @@
   },
   "radarGrade": "A+",
   "radarScore": 80,
-  "recentResults": [1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+  "recentResults": [
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1
+  ],
   "followDifficulty": "中等"
 }

@@ -2,9 +2,13 @@
 
 ## 1. Product Structure
 
-Scanner 回答的问题是：**现在大佬们在做什么方向？**
+Scanner 回答的问题：**现在大佬们在做什么方向？**
 
-输入来自左侧栏：
+布局固定为：
+- 左侧参数面板 `260px`
+- 右侧结构化报告 `flex:1, max-width≈900px`
+
+输入：
 - `coin`
 - `timeWindow`
 - `开始分析`
@@ -23,91 +27,115 @@ Scanner 回答的问题是：**现在大佬们在做什么方向？**
 - `timeWindow`: `30m | 1h | 4h | 24h`
 - 切换按钮不自动触发请求，必须点 `开始分析`
 - 1 次 scan = 1 个 coin × 1 个 timeWindow
+- Scanner 不支持“全币种扫描”
 
 ### Validation
-- 输入都来自按钮组，不需要额外 freeform 校验
-- 无匹配地址时返回空态，不是前端异常
+- 输入来自按钮组，不需要 freeform 校验
+- 无匹配地址时要显示空态，而不是空白页
 
 ## 3. Responsibility Split
 
-- **Backend**：`summary`、`addresses`、`markers`、`candles`
+- **Backend**：所有数值与规则，包括 `summary`、`addresses`、`markers`、`candles`、`tier`
 - **AI**：`description`、`nicknames`、`consensus`
-- **Frontend**：tier 映射、格式化、渲染顺序、K 线 marker 映射、点击卡片跳 Analyzer
+- **Frontend**：格式化展示、组件顺序、hover/click、K 线重映射、HyperbotLink 行为
 
-## 4. Frontend Rule Mappings
+> 说明：旧原型里某些等级映射可能在前端做过 sample fallback；生产实现以 **后端计算** 为准。
 
-### Tier mapping
-```javascript
-function getTier(winRate) {
-  if (winRate >= 85) return { label: '传奇', color: '#fcd535', mark: '★' };
-  if (winRate >= 75) return { label: '精英', color: '#0ecb81', mark: '◆' };
-  if (winRate >= 70) return { label: '高手', color: '#0ecb81', mark: '◆' };
-  if (winRate >= 60) return { label: '进阶', color: '#848e9c', mark: '●' };
-  return { label: '新手', color: '#848e9c', mark: '●' };
-}
-```
+## 4. Output Reading Order
 
-## 5. Output Reading Order
+- **3 秒**：看方向（多 / 空 / 分歧）
+- **10 秒**：选人（决定点谁进入 Analyzer）
+- **30 秒**：读共识与风险，决定是否进一步跟踪
 
-- **3 秒**：看方向（做多 / 做空 / 分歧）
-- **10 秒**：选地址（谁更值得点进 Analyzer）
-- **30 秒**：读共识分析，决定是否继续深挖
-
-## 6. Scanner Component Contract
+## 5. Scanner Component Contract
 
 ### S1 HeadlineCard
-- 标题必须是模板，不是 AI 自由发挥
-- 文案模板：`🐋 {longCount}个做多、{shortCount}个做空——{方向判断} {coin}`
-- `方向判断`：`longPct >= 60` → 共识偏向做多；`<= 40` → 共识偏向做空；否则多空分歧
-- `description` 由 AI 提供
+- 标题必须是模板：`🐋 {longCount}个聪明钱做多、{shortCount}个做空——{方向判断} {coin}`
+- `方向判断`：
+  - `longPct >= 60` → 共识偏向做多
+  - `longPct <= 40` → 共识偏向做空
+  - 否则 → 多空分歧
+- 描述 `description` 由 AI 提供
+- **S1 description 只说发现了什么，不给建议**
 
 ### S2 StatsGrid
-- 三列：多头占比 / 净多头仓位 / 最高胜率
-- 最高胜率取 `addresses[0].winRate`
-- 昵称占位 `topNick` 依赖 AI 昵称，AI 未返回前先显示地址缩写或 skeleton
+- 三列：
+  - 多头占比
+  - 多头净仓位
+  - 最高胜率 + `topNick`
+- `topWinRate` 取 `addresses[0].winRate`
+- `topNick` 依赖 AI 昵称；AI 未返回时先用 skeleton / 地址缩写占位
 
 ### S3 SmartMoneyChart
-- 高度约 320px
-- coin 锁定为当前扫描币种，不显示切币器
-- 允许切周期
-- marker 复用当前 scan 返回的数据
+- 高度约 `320px`
+- Scanner 图表 **锁定当前扫描币种**
+- **不显示切币器**
+- 只允许切周期：`1m / 5m / 15m / 1h / 4h / 1D`
+- markers 取每个地址在当前 coin 上最有代表性的持仓入场点
 
 ### S4 AddressList
 - `addresses[]` 按 `winRate desc` 排序
-- 每张卡显示：昵称、地址、tier、方向、杠杆、仓位、未实现盈亏、WL blocks、`pnl7d`、`profitRatio`
-- hover 时显示 `点击分析→`
+- 每张卡必须展示：
+  - Avatar(hash→SVG)
+  - AI 昵称
+  - 地址 HyperbotLink
+  - tier / winRate badge
+  - 方向 + 杠杆 pill
+  - 仓位
+  - 未实现盈亏
+  - WL × 10
+  - `pnl7d`
+  - `profitRatio`
+  - hover 提示：`点击分析→`
+- 外链点击不能触发 Analyzer 跳转
 
 ### S5 ConsensusCard
-- 多 / 空比例条 + AI 共识说明
-- 必须提示少数派风险，不要只吹单边
+- 顶部：多空比例条
+- 下方：AI `consensus`
+- `consensus` 必须包含：
+  1. 多空定性
+  2. 关键人物（昵称）
+  3. 价位区间
+  4. 少数派风险
+  5. 可操作建议
 
-## 7. Marker and Chart Behavior
+## 6. Marker and Chart Behavior
 
 ### Scanner
 - chart 切周期时调用 `GET /api/chart?coin=X&interval=Y`
-- 接口不返回 markers 时，复用已有 markers，重新映射到新蜡烛
-- LONG marker 放在蜡烛下方，SHORT 放在蜡烛上方
+- 如果接口未返回 markers，则复用已有 markers 重新映射到新蜡烛
+- LONG marker 在 candle low 下方
+- SHORT marker 在 candle high 上方
+- 多 marker 同一蜡烛时要做垂直堆叠
 
 ### Scanner → Analyzer handoff
-- 点击地址卡：切到 Analyzer、填入地址、自动执行分析
-- 这是新的计费事件，不是复用 Scanner 结果
+- 点击地址卡：
+  - 切到 Analyzer
+  - 填入地址
+  - 自动执行分析
+- 这是新的计费事件，不复用 Scanner 结果
 
-## 8. Error Handling
+## 7. Error Handling
 
 - `404 NO_ADDRESSES`：`当前无满足条件的聪明钱地址，可尝试放宽时间窗口`
 - `502 UPSTREAM_ERROR`：`数据源暂时不可用，请稍后重试`
-- AI 失败：仍然渲染数值部分，文案回退到安全占位
+- AI 失败：数值先渲染，文字回退安全占位
 
-## 9. Quality Standards For AI Text
+## 8. Quality Standards For AI Text
 
 ### Scanner copy
-- `description`：20-60 字，解释筛选到的方向和显著特征
+- `description`：20-60 字，客观摘要，不给建议
 - `nicknames`：2-3 字中文，不可重复，要有风格感
-- `consensus`：3-5 句，讲共振、分歧、风险，不要堆数字
+- `consensus`：3-5 句，必须含方向 / 人物 / 价位 / 风险 / 建议
 
-## 10. Required Footer
+## 9. Required Footer
 
 ```text
 数据源 Hyperliquid API
 ⚠ 不构成投资建议
 ```
+
+## Retry Interaction Contract
+
+- 上游异常或无结果空态都要使用 **错误卡 / 提示卡 + retry button** 的组合
+- retry button 的行为是：保留当前输入参数，重新执行当前 skill

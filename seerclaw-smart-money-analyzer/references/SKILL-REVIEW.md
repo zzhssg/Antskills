@@ -24,7 +24,7 @@
 - A11 TradesTable：筛选、分页、W/L 与持仓时长列。
 
 ### 逐项说明
-- FollowDifficulty 必须由前端规则映射得出，AI 只复述，不重新判断。
+- FollowDifficulty 必须由后端计算并返回，AI 只复述，不重新判断；前端只负责渲染。
 - Marker popover 要补齐 `nick/tier/wr/pr/res`，不能直接裸用 marker 原始字段。
 - Analyzer 图表切币时，必须按当前 coin 过滤 marker。
 

@@ -7,36 +7,55 @@ description: "SeerClaw smart money Scanner implementation skill. Use when buildi
 
 ## Scope
 
-只处理 **Scanner** 这一条链路：
-- 币种 + 时间窗选择
-- `/api/smart-money/scan` 联调
-- 扫描结果标题、统计卡、地址列表、共识区
-- Scanner K 线和 marker
-- 点击地址卡跳到 Analyzer 的交互契约
-- Scanner 专属 AI 文案：`description`、`nicknames`、`consensus`
+只处理 **Scanner** 链路：
+- 左侧参数：单币种 + 时间窗口
+- `POST /api/smart-money/scan`
+- S1~S5 五个输出模块
+- Scanner K 线 / marker / popover
+- Scanner → Analyzer 自动跳转
+- Scanner AI 文案：`description` / `nicknames` / `consensus`
 
-如果用户要做地址画像、Radar、持仓表、FollowAdvice，请切到 Analyzer skill。
+如果任务是地址画像、Radar、跟单建议、持仓表、交易明细，切到 Analyzer skill。
+
+## Source of Truth Order
+
+**Package precedence:** PRD 里的内联示例如果比 package refs 更薄，实施时以本 skill 包内的 references 组合契约为准。
+
+
+1. `references/business-spec.md` — 产品与渲染契约
+2. `references/backend-computation.md` — 后端发现 / 计算 / 聚合逻辑
+3. `references/api-spec.md` — API 契约与字段说明
+4. `references/implementation-guide.md` — 前端接线、状态机、交互细节
+5. `references/ai-prompts.md` — AI prompt 与输出质量要求
+6. `references/viz-specs.md` — 可视化像素级细节
+7. `references/prototype-notes.md` — 与 `smart-money-tracker.html` 对齐时必须保留的隐性行为
+8. `references/TestSuite.md` — 自测清单
 
 ## Package Contents
 
-- `references/business-spec.md`：Scanner 业务规则与组件契约
-- `references/implementation-guide.md`：Scanner 实现细节、数据转换、加载态与图表规则
-- `references/api-spec.md`：Scanner 接口与共享市场接口
-- `references/ai-prompts.md`：Scanner prompt、输出 schema、retry 规则
-- `references/viz-specs.md`：Scanner 用到的可视化规范
-- `references/TestSuite.md`：Scanner 测试清单
-- `references/SKILL-REVIEW.md`：Scanner 输出质量 review
-- `templates/scanner-ai-input.json` / `templates/scanner-ai-output.json`：AI 输入输出样例
-- `scripts/validate-ai-output.js`：Scanner AI 输出结构校验
+- `references/business-spec.md`
+- `references/backend-computation.md`
+- `references/api-spec.md`
+- `references/implementation-guide.md`
+- `references/ai-prompts.md`
+- `references/viz-specs.md`
+- `references/prototype-notes.md`
+- `references/TestSuite.md`
+- `references/SKILL-REVIEW.md`
+- `templates/scanner-ai-input.json`
+- `templates/scanner-ai-output.json`
+- `scripts/validate-ai-output.js`
 
 ## Workflow
 
-1. 先确认输入是否属于 Scanner：`coin` + `timeWindow` + “开始分析”。
-2. 读 `references/business-spec.md`，锁定页面顺序和交互边界。
-3. 读 `references/api-spec.md`，接 `/api/smart-money/scan` 与图表切周期接口。
-4. 读 `references/ai-prompts.md`，生成 Scanner 的说明文案、昵称和共识文本。
-5. 读 `references/viz-specs.md`，实现地址卡里的 WL blocks、Long/Short 比例条和 K 线 marker。
-6. 如果要验结构，跑：`node scripts/validate-ai-output.js templates/scanner-ai-output.json`。
+1. 先确认需求属于 Scanner，而不是 Analyzer。
+2. 先读 `references/business-spec.md`，锁定 S1~S5 契约。
+3. 需要后端或数据字段时读 `references/backend-computation.md` 和 `references/api-spec.md`。
+4. 需要状态机、交互、页面行为时读 `references/implementation-guide.md`。
+5. 需要文案规则时读 `references/ai-prompts.md`。
+6. 需要图表 / marker / popover / ratio bar 时读 `references/viz-specs.md`。
+7. 需要与 HTML 原型保持一致时读 `references/prototype-notes.md`。
+8. 交付前按 `references/TestSuite.md` 过一遍。
 
 ## Input Contract
 
@@ -47,55 +66,46 @@ trigger: user clicks “开始分析”
 ```
 
 规则：
-- 切换 coin 不自动发请求。
+- 每次只扫描一个币种。
+- 切换 coin / timeWindow 不自动执行。
 - 1 次 scan = 1 个 coin × 1 个 timeWindow。
-- 地址卡点击后要把地址带给 Analyzer，并触发新的计费事件。
+- 点击地址卡进入 Analyzer = 新计费事件。
+
+## Non-negotiable Rules
+
+- **生产口径以 PRD 为准**：所有数值、等级、雷达、建议仓位都由后端计算。
+- **前端只做格式化与渲染**；只有在纯原型模式下才允许本地 mock / fallback。
+- **S1 description 只做客观摘要**，不给建议。
+- **S5 consensus 必须带价位区间、少数派风险、可操作建议。**
+- **Scanner 图表不允许切币，只允许切周期。**
 
 ## Implementation Checklist
 
-### API
-- 主请求：`POST /api/smart-money/scan`
-- 图表切周期：`GET /api/chart?coin=X&interval=Y`
-- 市场辅助：`/market/candles`、`/market/ticker`、`/market/coins`
+### Backend
+- 地址发现机制可工作
+- 扫描结果已按 `winRate desc` 排序
+- marker 基于当前 coin 的主仓位入场点
+- `summary/addresses/markers/candles/ai` 字段齐全
 
-### Data
-- `candles[]` 是 Hyperliquid 风格，OHLCV 都是字符串，必须先 parse。
-- `addresses[]` 已按 `winRate desc` 排序，最高胜率直接取 `addresses[0]`。
-- `markers[]` 里的 `tier` 由前端根据 `winRate` 映射，不是后端直接给。
-- 数字格式统一用 `$1.4M / $42K / —`。
+### Frontend
+- 左侧 260px 参数面板
+- S1~S5 顺序正确
+- card hover / click 行为正确
+- `HyperbotLink` 不触发卡片跳转
+- LoadingState 至少 1.6s
 
 ### AI
-- 只生成 3 个字段：`description`、`nicknames`、`consensus`。
-- `topNick` 依赖 AI 昵称；AI 未返回前，S2 先显示占位。
-- `_selfScore.score < 70` 时重试，最多 3 次。
+- `description`：客观摘要
+- `nicknames`：2-3 字中文且不可重复
+- `consensus`：方向 + 人物 + 价位 + 风险 + 建议
+- `_selfScore < 70` 时重试
 
-### Rendering Order
-1. S1 HeadlineCard
-2. S2 StatsGrid
-3. S3 SmartMoneyChart
-4. S4 AddressList
-5. S5 ConsensusCard
-
-### Error Handling
-- `404 NO_ADDRESSES`：提示当前无满足条件地址。
-- `502 UPSTREAM_ERROR`：提示数据源暂时不可用并给 retry。
-- AI parse 失败：安全回退到占位文案，不阻塞数值渲染。
-
-## Cross-Skill Handoff
-
-点击 Scanner 地址卡时，必须保留这个契约：
-
-```javascript
-setActiveSkill('analyzer');
-setAnalyzerAddress(address);
-setIsRunning(true);
+### Validation
+```bash
+node scripts/validate-ai-output.js templates/scanner-ai-output.json
 ```
 
-这不是本 skill 去实现 Analyzer 页面，而是保证 Scanner 输出能无缝跳过去。
-
 ## Footer
-
-侧边栏底部固定：
 
 ```text
 数据源 Hyperliquid API
