@@ -24,3 +24,8 @@ Standalone package for the **Analyzer** side of SeerClaw smart money: address an
 - coin + time-window scan flow
 - Scanner address list rendering
 - Scanner consensus generation
+
+
+## Hi-fi reference
+
+- `references/analyzer-hi-fi.html`: Analyzer 高保真 HTML 参考页，默认直出 Analyzer 成品态 UI。

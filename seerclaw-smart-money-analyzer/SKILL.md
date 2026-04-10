@@ -40,6 +40,7 @@ description: "SeerClaw smart money Analyzer implementation skill. Use when build
 - `references/ai-prompts.md`
 - `references/viz-specs.md`
 - `references/prototype-notes.md`
+- `references/analyzer-hi-fi.html`
 - `references/TestSuite.md`
 - `references/SKILL-REVIEW.md`
 - `templates/analyzer-ai-input.json`

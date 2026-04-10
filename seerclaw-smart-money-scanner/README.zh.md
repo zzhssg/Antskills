@@ -25,3 +25,8 @@
 - Radar 评分
 - 跟单建议
 - 交易历史分析页
+
+
+## 高保真参考
+
+- `references/scanner-hi-fi.html`：Scanner 高保真 HTML 参考页，默认直出 Scanner 成品态 UI。

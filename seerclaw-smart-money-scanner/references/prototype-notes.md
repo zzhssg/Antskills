@@ -11,3 +11,5 @@
 - 地址外链必须 `stopPropagation`
 
 这些行为是原型 parity 要求，不代表生产真实数据来源。
+
+- `scanner-hi-fi.html`：可直接打开的高保真 HTML 参考页

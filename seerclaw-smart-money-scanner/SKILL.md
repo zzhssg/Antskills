@@ -40,6 +40,7 @@ description: "SeerClaw smart money Scanner implementation skill. Use when buildi
 - `references/ai-prompts.md`
 - `references/viz-specs.md`
 - `references/prototype-notes.md`
+- `references/scanner-hi-fi.html`
 - `references/TestSuite.md`
 - `references/SKILL-REVIEW.md`
 - `templates/scanner-ai-input.json`

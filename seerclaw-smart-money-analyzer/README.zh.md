@@ -24,3 +24,8 @@
 - 按币种和时间窗扫描地址
 - Scanner 地址卡列表
 - Scanner 共识文案
+
+
+## 高保真参考
+
+- `references/analyzer-hi-fi.html`：Analyzer 高保真 HTML 参考页，默认直出 Analyzer 成品态 UI。

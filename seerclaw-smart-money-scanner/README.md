@@ -25,3 +25,8 @@ Standalone package for the **Scanner** side of SeerClaw smart money: scan by coi
 - radar score rendering
 - follow-advice logic
 - trade-history analyzer work
+
+
+## Hi-fi reference
+
+- `references/scanner-hi-fi.html`: Scanner 高保真 HTML 参考页，默认直出 Scanner 成品态 UI。

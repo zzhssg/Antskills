@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeerClaw Analyzer Hi-Fi Reference</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html,body,#root{margin:0;padding:0;height:100%;overflow:hidden}
+*{box-sizing:border-box}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes progress{0%{width:0}30%{width:35%}60%{width:65%}85%{width:85%}100%{width:100%}}
+@keyframes stepFade{0%{opacity:0;transform:translateY(4px)}15%{opacity:1;transform:translateY(0)}85%{opacity:1}100%{opacity:0}}
+input::placeholder{color:rgba(255,255,255,0.28)}input:focus{border-color:rgba(252,213,53,0.3)!important;outline:none}
+
+/* Interactive cards */
+.scan-card{transition:border-color .15s,background .15s,transform .12s}
+.scan-card:hover{border-color:rgba(252,213,53,0.25)!important;background:#161c2e!important;transform:translateY(-1px)}
+.scan-card:active{transform:translateY(0)}
+.scan-card .click-hint{opacity:.4;transition:opacity .15s}
+.scan-card:hover .click-hint{opacity:1}
+
+/* Table rows */
+.tbl-row{transition:background .1s}
+.tbl-row:hover{background:rgba(252,213,53,0.06)!important}
+.pos-row{transition:background .1s}
+.pos-row:hover{background:rgba(255,255,255,0.03)}
+
+/* Buttons */
+.coin-btn,.period-btn,.filter-btn,.page-btn{transition:all .12s}
+.coin-btn:hover:not([disabled]),.filter-btn:hover{border-color:rgba(255,255,255,0.15)!important;background:rgba(255,255,255,0.06)!important}
+.period-btn:hover{background:rgba(255,255,255,0.06)!important;color:rgba(255,255,255,0.92)!important}
+.page-btn:hover:not([disabled]){background:rgba(255,255,255,0.06)!important;border-color:rgba(255,255,255,0.15)!important}
+.page-btn:disabled{opacity:.4;cursor:not-allowed!important}
+
+/* Execute button */
+.exec-btn{transition:all .15s}
+.exec-btn:hover:not([disabled]){transform:translateY(-1px);box-shadow:0 4px 16px rgba(252,213,53,0.25)}
+.exec-btn:active:not([disabled]){transform:translateY(0);box-shadow:none}
+
+/* Skill tabs */
+.skill-tab{transition:all .12s}
+.skill-tab:hover{background:rgba(255,255,255,0.04)!important}
+
+/* Preset address buttons */
+.preset-btn{transition:all .12s}
+.preset-btn:hover{background:rgba(252,213,53,0.06)!important}
+
+/* Content fade in */
+.content-fade{animation:fadeIn .35s ease}
+
+/* Chart markers */
+.sm-marker-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:15}
+.sm-marker-col{position:absolute;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none}
+.sm-marker-col.bearish{transform:translate(-50%,-100%)}
+.sm-marker-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;border:2px solid rgba(11,14,17,.9);box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:auto;cursor:pointer;transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden}
+.sm-marker-dot:hover{transform:scale(1.2);box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.sm-marker-dot.long{background:linear-gradient(180deg,#19d68f,#0ca66a)}
+.sm-marker-dot.short{background:linear-gradient(180deg,#ff5e74,#d83a53)}
+.sm-marker-dot canvas{width:100%;height:100%;border-radius:50%}
+.sm-marker-ring{position:absolute;inset:-2px;border-radius:50%;pointer-events:none}
+.sm-marker-dot.long .sm-marker-ring{border:2px solid rgba(14,203,129,.6)}
+.sm-marker-dot.short .sm-marker-ring{border:2px solid rgba(246,70,93,.6)}
+.sm-marker-mini{position:absolute;right:-4px;bottom:-4px;min-width:14px;height:14px;border-radius:99px;background:rgba(11,14,17,.94);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;padding:0 3px;font-size:7px;font-weight:800;color:#eee;font-family:'JetBrains Mono',monospace}
+.sm-marker-stem{width:1px;height:10px;background:rgba(255,255,255,.1)}
+.sm-tooltip{position:absolute;padding:14px 16px;border-radius:10px;background:rgba(11,14,17,.97);border:1px solid rgba(255,255,255,.1);font-family:'JetBrains Mono',monospace;pointer-events:none;z-index:20;transform:translate(-50%,-100%);margin-top:-12px;box-shadow:0 12px 40px rgba(0,0,0,.6);backdrop-filter:blur(12px);min-width:240px;animation:fadeIn .15s ease}
+.sm-tip-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sm-tip-name{font-size:14px;font-weight:700;color:#eef0f5}
+.sm-tip-tier{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px}
+.sm-tip-dir{font-size:18px;font-weight:800;margin-bottom:8px}
+.sm-tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:11px}
+.sm-tip-label{color:rgba(255,255,255,0.35)}
+.sm-tip-val{color:rgba(255,255,255,0.8);font-weight:600;text-align:right}
+.sm-tip-wl{display:flex;gap:2px;margin-top:8px}
+.sm-tip-wl-dot{width:12px;height:12px;border-radius:2px;font-size:6px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:700}
+</style>
+</head>
+<body>
+<div style="position:fixed;top:10px;right:12px;z-index:9999;padding:6px 10px;border-radius:999px;background:rgba(252,213,53,0.14);border:1px solid rgba(252,213,53,0.35);color:#fde68a;font:12px JetBrains Mono,monospace;">ANALYZER HI-FI REF</div>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useRef,useMemo,useCallback}=React;
+const MF="'JetBrains Mono',monospace",SF="'Noto Sans SC',sans-serif";
+const C={bg:"#0b0e18",card:"#111623",cardBorder:"rgba(255,255,255,0.08)",text1:"rgba(255,255,255,0.92)",text2:"rgba(255,255,255,0.72)",text3:"rgba(255,255,255,0.48)",text4:"rgba(255,255,255,0.28)",up:"#0ecb81",dn:"#f6465d",yl:"#fcd535",divider:"rgba(255,255,255,0.06)"};
+const dc=d=>d==="LONG"?C.up:d==="SHORT"?C.dn:C.text4;
+const fmt=n=>Math.abs(n)>=1e6?`$${(n/1e6).toFixed(1)}M`:Math.abs(n)>=1e3?`$${(n/1e3).toFixed(0)}K`:`$${n}`;
+const Card=({children,style,...p})=><div style={{background:C.card,border:`1px solid ${C.cardBorder}`,borderRadius:10,padding:"16px 18px",...style}} {...p}>{children}</div>;
+const Label=({children,style})=><div style={{fontSize:12,color:C.text4,fontFamily:MF,letterSpacing:.5,marginBottom:8,fontWeight:500,...style}}>{children}</div>;
+const HyperbotLink=({addr,children,style})=><a href={`https://hyperbot.network/trader/${addr}`} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{color:C.text4,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3,transition:"color .12s",...style}} onMouseEnter={e=>e.currentTarget.style.color=C.yl} onMouseLeave={e=>e.currentTarget.style.color=style?.color||C.text4}>{children}<svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{opacity:.5}}><path d="M4 1h7v7M11 1L4.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></a>;
+
+/* ═══ HASH AVATAR ═══ */
+function hashU32(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;return h>>>0;}
+function renderAvatarCanvas(cv,addr,sz){if(!cv||!addr)return;const s=sz||22;cv.width=s*2;cv.height=s*2;cv.style.width=s+"px";cv.style.height=s+"px";const ctx=cv.getContext("2d");ctx.scale(2,2);const h=hashU32(addr.toLowerCase());const h1=h%360,h2=(h1+60+(h>>8)%120)%360;const bg=ctx.createLinearGradient(0,0,s,s);bg.addColorStop(0,`hsl(${h1},60%,45%)`);bg.addColorStop(1,`hsl(${h2},55%,38%)`);ctx.fillStyle=bg;ctx.fillRect(0,0,s,s);ctx.globalAlpha=.5;const cs=s/5;for(let y=0;y<5;y++)for(let x=0;x<3;x++){if(((h>>((y*3+x)%30))&1)||(x===1&&y===2)){ctx.fillStyle=`hsl(${(h1+120)%360},70%,60%)`;ctx.fillRect(x*cs,y*cs,cs,cs);if(x<2)ctx.fillRect((4-x)*cs,y*cs,cs,cs);}}ctx.globalAlpha=1;}
+function Avatar({addr,size=36}){const h=useMemo(()=>{let v=0;for(let i=0;i<addr.length;i++)v=((v<<5)-v+addr.charCodeAt(i))|0;return Math.abs(v);},[addr]);const hue=h%360,cs=size/5,px=[];for(let y=0;y<5;y++)for(let x=0;x<3;x++)if(((h>>((y*3+x)%30))&1)||(x===1&&y===2)){px.push({x,y});if(x<2)px.push({x:4-x,y});}return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{borderRadius:"50%",flexShrink:0}}><rect width={size} height={size} fill={`hsl(${hue},18%,14%)`}/>{px.map((p,i)=><rect key={i} x={p.x*cs} y={p.y*cs} width={cs} height={cs} fill={`hsl(${hue},65%,60%)`} opacity={.9}/>)}</svg>;}
+function WL({r}){return <div style={{display:"flex",gap:3}}>{r.map((v,i)=><div key={i} style={{width:14,height:14,borderRadius:3,background:v?C.up:C.dn,opacity:i<7?.4:1,fontSize:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#000",fontWeight:700}}>{v?"W":"L"}</div>)}</div>;}
+
+/* ═══ LOADING STATE ═══ */
+const LOAD_STEPS={
+  scanner:["连接 Hyperliquid API...","扫描大额持仓地址...","计算历史胜率...","检测共振信号...","生成共识分析..."],
+  analyzer:["获取地址交易记录...","聚合 Round Trips...","计算胜率与盈亏比...","分析交易风格...","生成跟单评估..."],
+};
+function LoadingState({skill,sk,coin,addr}){
+  const[step,setStep]=useState(0);
+  const steps=LOAD_STEPS[sk]||LOAD_STEPS.scanner;
+  useEffect(()=>{setStep(0);const timers=steps.map((_,i)=>setTimeout(()=>setStep(i),i*280));return()=>timers.forEach(clearTimeout);},[sk]);
+  const pct=Math.min(100,((step+1)/steps.length)*100);
+  return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div style={{textAlign:"center",width:320}}>
+    <div style={{fontSize:44,marginBottom:20,animation:"pulse 1.8s ease infinite"}}>{skill.icon}</div>
+    <div style={{color:C.text1,fontSize:16,fontWeight:700,marginBottom:6}}>{sk==="scanner"?`扫描 ${coin} 聪明钱`:`分析 ${addr||"地址"}`}</div>
+    {/* Progress bar */}
+    <div style={{width:"100%",height:4,borderRadius:2,background:"rgba(255,255,255,0.06)",overflow:"hidden",marginBottom:16}}>
+      <div style={{height:"100%",borderRadius:2,background:`linear-gradient(90deg,${skill.accent},${skill.accentAlt})`,width:`${pct}%`,transition:"width .3s ease"}}/>
+    </div>
+    {/* Animated steps */}
+    <div style={{height:20,position:"relative",overflow:"hidden"}}>
+      {steps.map((s,i)=><div key={i} style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",color:i===step?C.text3:C.text4,fontSize:12,fontFamily:MF,transition:"opacity .2s, transform .2s",opacity:i===step?1:0,transform:i===step?"translateY(0)":i<step?"translateY(-12px)":"translateY(12px)"}}>{i<=step?"✓ ":""}{s}</div>)}
+    </div>
+    {/* Step dots */}
+    <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:14}}>
+      {steps.map((_,i)=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<=step?skill.accent:C.text4+"40",transition:"background .2s,transform .2s",transform:i===step?"scale(1.3)":"scale(1)"}}/>)}
+    </div>
+  </div></div>;
+}
+
+/* ═══ RADAR CHART (6 dimensions + hover tooltip) ═══ */
+function RadarChart({values,rawData,size=280}){
+  const[hover,setHover]=useState(null);
+  const N=6;
+  const labels=["胜率","盈亏比","资金量","绝对收益","稳定性","近期状态"];
+  const keys=["winRate","profitRatio","capital","absPnl","stability","recentForm"];
+  const tooltips=[
+    rawData?`胜率 = ${rawData.wins}胜 / ${rawData.total}笔 = ${rawData.wr}%`:`胜率 = 盈利笔数 / 总笔数`,
+    rawData?`盈亏比 = 均赢$${(rawData.avgWin/1000).toFixed(1)}K / 均亏$${(Math.abs(rawData.avgLoss)/1000).toFixed(1)}K = ${rawData.pr}:1`:`盈亏比 = 平均盈利 / 平均亏损`,
+    rawData?`平均仓位 ${fmt(rawData.positions?.[0]?.size||0)}，log归一化`:`资金量 = 平均仓位 log归一化`,
+    rawData?`30D总盈亏 +${fmt(rawData.pnl30d)}，log归一化`:`绝对收益 = 30日PnL log归一化`,
+    rawData?`MDD = ${rawData.mdd}%，分数 = 100 - |MDD|×5`:`稳定性 = 100 - |最大回撤| × 5`,
+    rawData?`近7日胜率 / 总体胜率 的比值 × 100`:`近期状态 = 7日胜率 vs 总体胜率`,
+  ];
+  const cx=size/2,cy=size/2,r=size*.25;
+  const ang=i=>(Math.PI*2*i)/N-Math.PI/2;
+  const pts=keys.map((k,i)=>({x:cx+Math.cos(ang(i))*r*(values[k]/100),y:cy+Math.sin(ang(i))*r*(values[k]/100),v:values[k]}));
+  const pathD=pts.map((p,i)=>`${i===0?"M":"L"} ${p.x} ${p.y}`).join(" ")+" Z";
+  const avg=Math.round(keys.reduce((s,k)=>s+values[k],0)/N);
+  const grade=avg>=85?"S":avg>=75?"A+":avg>=65?"A":avg>=55?"B+":avg>=45?"B":"C";
+  const gradeColor=avg>=75?C.yl:avg>=55?C.up:C.text3;
+
+  return <div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {[.25,.5,.75,1].map((lv,li)=><polygon key={li} points={Array.from({length:N},(_,i)=>`${cx+Math.cos(ang(i))*r*lv},${cy+Math.sin(ang(i))*r*lv}`).join(" ")} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth=".8"/>)}
+      {Array.from({length:N},(_,i)=><line key={i} x1={cx} y1={cy} x2={cx+Math.cos(ang(i))*r} y2={cy+Math.sin(ang(i))*r} stroke={hover===i?"rgba(252,213,53,0.3)":"rgba(255,255,255,0.06)"} strokeWidth={hover===i?"1.5":".8"} style={{transition:"all .15s"}}/>)}
+      <path d={pathD} fill={C.yl+"15"} stroke={C.yl} strokeWidth="2"/>
+      {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r={hover===i?5:3} fill={hover===i?"#fff":C.yl} stroke={hover===i?C.yl:"none"} strokeWidth="2" style={{transition:"all .15s"}}/>)}
+      {labels.map((l,i)=>{
+        const d=r+32;
+        const lx=cx+Math.cos(ang(i))*d,ly=cy+Math.sin(ang(i))*d;
+        const hx=lx,hy=ly;
+        // Adjust anchor based on position: left/right/center
+        const a=ang(i),isLeft=Math.cos(a)<-0.3,isRight=Math.cos(a)>0.3;
+        const anchor=isLeft?"end":isRight?"start":"middle";
+        return <React.Fragment key={i}>
+          <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" style={{transition:"all .12s"}}>
+            <tspan fill={hover===i?C.text1:C.text3} fontSize="11" fontFamily={SF} fontWeight={hover===i?"700":"400"}>{l} </tspan>
+            <tspan fill={hover===i?C.yl:C.text2} fontSize="12" fontFamily={MF} fontWeight="700">{pts[i].v}</tspan>
+          </text>
+          <circle cx={hx} cy={hy} r={24} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={()=>setHover(i)} onMouseLeave={()=>setHover(null)}/>
+        </React.Fragment>;
+      })}
+      <text x={cx} y={cy-5} textAnchor="middle" dominantBaseline="middle" fill={gradeColor} fontSize="26" fontWeight="800" fontFamily={MF}>{grade}</text>
+      <text x={cx} y={cy+14} textAnchor="middle" dominantBaseline="middle" fill={C.text4} fontSize="10" fontFamily={MF}>{avg}分</text>
+    </svg>
+    {/* Hover tooltip */}
+    {hover!==null&&<div style={{position:"absolute",bottom:-8,left:"50%",transform:"translateX(-50%)",padding:"6px 12px",borderRadius:6,background:"rgba(11,14,17,.96)",border:`1px solid ${C.yl}30`,fontSize:11,color:C.text2,fontFamily:MF,whiteSpace:"nowrap",boxShadow:"0 6px 20px rgba(0,0,0,.5)",backdropFilter:"blur(8px)",zIndex:5,animation:"fadeIn .15s ease"}}>{tooltips[hover]}</div>}
+  </div>;
+}
+function SampleOverlay(){return <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",zIndex:10}}>{Array.from({length:4},(_,i)=><div key={i} style={{position:"absolute",top:`${18+i*22}%`,left:"50%",transform:"translate(-50%,-50%) rotate(-18deg)",fontSize:44,fontWeight:800,fontFamily:MF,color:"rgba(255,255,255,0.025)",letterSpacing:18,whiteSpace:"nowrap",userSelect:"none"}}>SAMPLE DATA</div>)}</div>;}
+function SampleBanner(){return <div style={{background:"rgba(252,213,53,0.08)",border:"1px solid rgba(252,213,53,0.2)",borderRadius:8,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:16}}><span style={{fontSize:16}}>📋</span><span style={{fontSize:13,color:C.text2}}>以下为<span style={{color:C.yl,fontWeight:600}}>样例数据</span>。点击左侧「开始分析」获取实时结果。</span></div>;}
+
+/* ═══ CANDLE GENERATOR ═══ */
+const COIN_CFG={BTC:{base:94500,vol:.008},ETH:{base:3380,vol:.012},SOL:{base:168,vol:.018},DOGE:{base:.168,vol:.025},WIF:{base:1.42,vol:.03}};
+const PERIODS=[{l:"1m",sec:60},{l:"5m",sec:300},{l:"15m",sec:900},{l:"1h",sec:3600},{l:"4h",sec:14400},{l:"1D",sec:86400}];
+function genCandleData(coin,pSec,n=120){const cfg=COIN_CFG[coin]||COIN_CFG.BTC;const now=Math.floor(Date.now()/1000),anc=Math.floor(now/pSec)*pSec;const d=[];let prev=cfg.base;for(let i=n-1;i>=0;i--){const idx=n-1-i,t=anc-i*pSec,v=cfg.base*cfg.vol;const wave=Math.sin(idx/5.2)*v*.9+Math.cos(idx/13.5)*v*.6+Math.sin(idx/2.8)*v*.2;const trend=idx*v*.005;const base=cfg.base*.98+trend+wave;const cl=cfg.base>=1?Math.round(base*100)/100:+base.toPrecision(4);const op=cfg.base>=1?Math.round(prev*100)/100:+prev.toPrecision(4);const sp=v*.2;const hi=Math.max(op,cl)+sp+Math.abs(Math.sin(idx/4.1))*sp*1.4;const lo=Math.min(op,cl)-sp-Math.abs(Math.cos(idx/3.7))*sp*1.3;d.push({time:t,open:op,high:cfg.base>=1?Math.round(hi*100)/100:+hi.toPrecision(4),low:cfg.base>=1?Math.round(lo*100)/100:+lo.toPrecision(4),close:cl,volume:Math.round(40+Math.random()*200)});prev=cl;}return d;}
+
+/* ═══════════════════════════════════════════════════════
+   SHARED CHART COMPONENT (TradingView Lightweight Charts)
+   ═══════════════════════════════════════════════════════ */
+function SmartMoneyChart({markers=[],defaultCoin="BTC",coins=["BTC","ETH","SOL"],height=340}){
+  const ctnRef=useRef(null),chartRef=useRef(null),serRef=useRef(null),volRef=useRef(null),mlRef=useRef(null);
+  const[coin,setCoin]=useState(defaultCoin);const[period,setPeriod]=useState("15m");const[tip,setTip]=useState(null);
+  useEffect(()=>{if(!ctnRef.current||chartRef.current)return;const ch=LightweightCharts.createChart(ctnRef.current,{layout:{background:{color:"#0f1318"},textColor:"#848e9c",fontFamily:MF,fontSize:10},grid:{vertLines:{color:"#1e2329"},horzLines:{color:"#1e2329"}},crosshair:{mode:0,vertLine:{labelBackgroundColor:"#2b3139"},horzLine:{labelBackgroundColor:"#2b3139"}},rightPriceScale:{borderColor:"#1e2329",scaleMargins:{top:.02,bottom:.08}},timeScale:{borderColor:"#1e2329",timeVisible:true,secondsVisible:false,barSpacing:8},width:ctnRef.current.offsetWidth,height});const cs=ch.addCandlestickSeries({upColor:"#0ecb81",downColor:"#f6465d",borderUpColor:"#0ecb81",borderDownColor:"#f6465d",wickUpColor:"#0ecb81",wickDownColor:"#f6465d"});const vs=ch.addHistogramSeries({priceFormat:{type:"volume"},priceScaleId:"vol"});ch.priceScale("vol").applyOptions({scaleMargins:{top:.85,bottom:0}});chartRef.current=ch;serRef.current=cs;volRef.current=vs;const ro=new ResizeObserver(()=>{if(ctnRef.current)ch.applyOptions({width:ctnRef.current.offsetWidth});});ro.observe(ctnRef.current);ch.timeScale().subscribeVisibleTimeRangeChange(()=>requestAnimationFrame(()=>renderMarkers()));return()=>{ro.disconnect();ch.remove();chartRef.current=null;};},[height]);
+  useEffect(()=>{if(!serRef.current)return;const pc=PERIODS.find(p=>p.l===period)||PERIODS[0];const data=genCandleData(coin,pc.sec);serRef.current.setData(data);volRef.current.setData(data.map(d=>({time:d.time,value:d.volume,color:d.close>=d.open?"rgba(14,203,129,0.2)":"rgba(246,70,93,0.2)"})));const activeMarkers=markers.filter(m=>!m.coin||m.coin===coin);activeMarkers.forEach(m=>{const near=data.reduce((b,c)=>Math.abs(c.time-m.time)<Math.abs(b.time-m.time)?c:b,data[0]);m._mt=near.time;m._p=m.price||near[m.dir==="LONG"?"low":"high"];});const nm=activeMarkers.filter(m=>m._mt).sort((a,b)=>a._mt-b._mt).map(m=>({time:m._mt,position:m.dir==="LONG"?"belowBar":"aboveBar",color:m.dir==="LONG"?"#0ecb81":"#f6465d",shape:m.dir==="LONG"?"arrowUp":"arrowDown",text:"",id:m.addr+m.time}));serRef.current.setMarkers(nm);chartRef.current.timeScale().fitContent();setTimeout(renderMarkers,120);},[coin,period,markers]);
+  const renderMarkers=useCallback(()=>{const L=mlRef.current,ch=chartRef.current,sr=serRef.current;if(!L||!ch||!sr)return;L.innerHTML="";const activeMarkers=markers.filter(m=>!m.coin||m.coin===coin);activeMarkers.forEach(m=>{if(!m._mt)return;const x=ch.timeScale().timeToCoordinate(m._mt),y=sr.priceToCoordinate(m._p);if(x==null||y==null||isNaN(x)||isNaN(y))return;const isL=m.dir==="LONG";const col=document.createElement("div");col.className=`sm-marker-col ${isL?"bullish":"bearish"}`;col.style.left=x+"px";col.style.top=(isL?y+8:y-8)+"px";const stem=document.createElement("div");stem.className="sm-marker-stem";const dot=document.createElement("div");dot.className=`sm-marker-dot ${isL?"long":"short"}`;const cvs=document.createElement("canvas");renderAvatarCanvas(cvs,m.addr||m.nick,22);dot.appendChild(cvs);const ring=document.createElement("div");ring.className="sm-marker-ring";dot.appendChild(ring);if(m.lev){const mini=document.createElement("div");mini.className="sm-marker-mini";mini.textContent=m.lev;dot.appendChild(mini);}dot.onmouseenter=()=>setTip({x,y:isL?y+70:y-70,m});dot.onmouseleave=()=>setTip(null);if(isL){col.appendChild(stem);col.appendChild(dot);}else{col.appendChild(dot);col.appendChild(stem);}L.appendChild(col);});},[markers]);
+  return <Card style={{padding:0,position:"relative"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 12px",borderBottom:`1px solid ${C.divider}`,background:"#0f1318",borderRadius:"10px 10px 0 0"}}>{coins.length>1?<div style={{display:"flex",gap:3}}>{coins.map(c=><button key={c} className="coin-btn" onClick={()=>setCoin(c)} style={{padding:"4px 10px",borderRadius:4,border:coin===c?`1px solid ${C.yl}`:"1px solid transparent",background:coin===c?C.yl+"12":"transparent",color:coin===c?C.yl:C.text3,cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:MF}}>{c}</button>)}</div>:<div style={{fontSize:12,color:C.text2,fontWeight:600,fontFamily:MF}}>{coin}/USDT</div>}<div style={{display:"flex",gap:2}}>{PERIODS.map(p=><button key={p.l} className="period-btn" onClick={()=>setPeriod(p.l)} style={{padding:"3px 8px",border:"none",background:period===p.l?"rgba(255,255,255,0.08)":"transparent",color:period===p.l?C.text1:C.text4,cursor:"pointer",fontSize:10,fontWeight:600,fontFamily:MF,borderRadius:3}}>{p.l}</button>)}</div></div><div style={{position:"relative"}}><div ref={ctnRef} style={{width:"100%",height}}/><div ref={mlRef} className="sm-marker-layer"/>{tip&&tip.m&&(()=>{const m=tip.m;const isUp=m.pnl>=0;const tierBg=m.tier==="传奇"?C.yl+"20":C.up+"18";const tierCol=m.tier==="传奇"?C.yl:C.up;return <div className="sm-tooltip" style={{left:tip.x,top:tip.y}}>
+        <div className="sm-tip-head">
+          <Avatar addr={m.addr||""} size={28}/>
+          <div><div className="sm-tip-name">「{m.nick||m.addr}」</div><div style={{display:"flex",gap:6,marginTop:2}}>{m.tier&&<span className="sm-tip-tier" style={{background:tierBg,color:tierCol}}>{m.tier}</span>}{m.wr&&<span style={{fontSize:10,color:C.text3}}>胜率 <span style={{color:C.up,fontWeight:700}}>{m.wr}%</span></span>}</div></div>
+        </div>
+        <div className="sm-tip-dir" style={{color:dc(m.dir)}}>{m.dir} {m.lev}</div>
+        <div className="sm-tip-grid">
+          <span className="sm-tip-label">入场价</span><span className="sm-tip-val">${m.price?.toLocaleString()}</span>
+          <span className="sm-tip-label">仓位</span><span className="sm-tip-val">{m.size?fmt(m.size):"-"}</span>
+          <span className="sm-tip-label">盈亏</span><span className="sm-tip-val" style={{color:isUp?C.up:C.dn}}>{isUp?"+":""}{fmt(m.pnl)}</span>
+          <span className="sm-tip-label">盈亏%</span><span className="sm-tip-val" style={{color:isUp?C.up:C.dn}}>{isUp?"+":""}{m.pnlPct||"?"}%</span>
+          {m.pr&&<><span className="sm-tip-label">盈亏比</span><span className="sm-tip-val" style={{color:C.yl}}>{m.pr}:1</span></>}
+          {m.ago&&<><span className="sm-tip-label">开仓</span><span className="sm-tip-val">{m.ago}</span></>}
+        </div>
+        {m.res&&<div className="sm-tip-wl">{m.res.map((r,i)=><div key={i} className="sm-tip-wl-dot" style={{background:r?C.up:C.dn,opacity:i<7?.4:1}}>{r?"W":"L"}</div>)}</div>}
+      </div>;})()}</div></Card>;
+}
+
+/* ═══ Canvas Charts (from v9) ═══ */
+function DailyBarsChart({daily,height=130}){const cr=useRef(null),wr=useRef(null);const[w,sW]=useState(400);useEffect(()=>{const e=wr.current;if(!e)return;const o=new ResizeObserver(x=>sW(x[0].contentRect.width));o.observe(e);return()=>o.disconnect();},[]);useEffect(()=>{const cv=cr.current;if(!cv)return;const ctx=cv.getContext("2d");const dpr=window.devicePixelRatio||1;cv.width=w*dpr;cv.height=height*dpr;cv.style.width=w+"px";cv.style.height=height+"px";ctx.scale(dpr,dpr);const pl=50,pr=8,pt=8,pb=20,cW=w-pl-pr,cH=height-pt-pb;const dMax=Math.max(...daily.map(Math.abs),1);const bW=Math.max(3,cW/daily.length*.6);const zY=pt+cH*.5;ctx.fillStyle=C.card;ctx.fillRect(0,0,w,height);ctx.strokeStyle="rgba(255,255,255,0.1)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pl,zY);ctx.lineTo(w-pr,zY);ctx.stroke();daily.forEach((v,i)=>{const x=pl+(i+.5)/daily.length*cW;const bH=(Math.abs(v)/dMax)*(cH*.45);const y=v>=0?zY-bH:zY;ctx.fillStyle=v>=0?C.up+"80":C.dn+"80";ctx.fillRect(x-bW/2,y,bW,bH);});ctx.fillStyle=C.text3;ctx.font="9px "+MF;ctx.textAlign="right";[dMax,0,-dMax].forEach((v,i)=>{const y=[pt+cH*.05,zY,pt+cH*.95][i];ctx.fillText(v===0?"0":fmt(v),pl-5,y+3);});ctx.textAlign="center";ctx.fillStyle=C.text4;ctx.font="9px "+MF;[0,9,19,29].forEach(i=>{if(i<daily.length)ctx.fillText(`${i+1}d`,pl+(i+.5)/daily.length*cW,height-5);});},[daily,w,height]);return <div ref={wr} style={{width:"100%"}}><canvas ref={cr} style={{display:"block",borderRadius:6}}/></div>;}
+
+function CumulativeChart({data,height=130}){const cr=useRef(null),wr=useRef(null);const[w,sW]=useState(400);useEffect(()=>{const e=wr.current;if(!e)return;const o=new ResizeObserver(x=>sW(x[0].contentRect.width));o.observe(e);return()=>o.disconnect();},[]);useEffect(()=>{const cv=cr.current;if(!cv)return;const ctx=cv.getContext("2d");const dpr=window.devicePixelRatio||1;cv.width=w*dpr;cv.height=height*dpr;cv.style.width=w+"px";cv.style.height=height+"px";ctx.scale(dpr,dpr);const pl=50,pr=8,pt=8,pb=16,cW=w-pl-pr,cH=height-pt-pb;const mn=Math.min(...data,0),mx=Math.max(...data);const rng=mx-mn||1;const toX=i=>pl+(i/(data.length-1))*cW,toY=v=>pt+(1-(v-mn)/rng)*cH;ctx.fillStyle=C.card;ctx.fillRect(0,0,w,height);for(let i=0;i<=3;i++){const v=mn+(i/3)*rng,y=toY(v);ctx.strokeStyle=C.divider;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pl,y);ctx.lineTo(w-pr,y);ctx.stroke();ctx.fillStyle=C.text3;ctx.font="9px "+MF;ctx.textAlign="right";ctx.fillText(fmt(v),pl-5,y+3);}const lv=data[data.length-1],gc=lv>=0?C.up:C.dn;ctx.beginPath();ctx.moveTo(toX(0),toY(0));data.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));ctx.lineTo(toX(data.length-1),toY(0));ctx.closePath();const g=ctx.createLinearGradient(0,pt,0,height);g.addColorStop(0,gc+"22");g.addColorStop(1,gc+"03");ctx.fillStyle=g;ctx.fill();ctx.beginPath();data.forEach((v,i)=>{i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v));});ctx.strokeStyle=gc;ctx.lineWidth=2;ctx.stroke();const lx=toX(data.length-1),ly=toY(lv);ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fillStyle=gc;ctx.fill();},[data,w,height]);return <div ref={wr} style={{width:"100%"}}><canvas ref={cr} style={{display:"block",borderRadius:6}}/></div>;}
+
+/* ═══ SKILLS + DATA ═══ */
+const SKILLS={scanner:{id:"scanner",icon:"🐋",name:"聪明钱扫描器",nameEn:"SMART MONEY SCANNER",desc:"扫描 Hyperliquid 上的大额持仓地址，筛选高胜率「聪明钱」，分析方向共识。",accent:C.up,accentAlt:C.yl},analyzer:{id:"analyzer",icon:"🔍",name:"地址分析器",nameEn:"ADDRESS ANALYZER",desc:"深度分析单个地址的交易风格与战绩，生成跟单评估报告。",accent:C.yl,accentAlt:"#f0b90b"}};
+
+const SCAN_LIST=[{addr:"0x7a3f...e2c1",full:"0x7a3f8b2c4d",nick:"快刀手",tier:"传奇",wr:86.4,dir:"LONG",lev:"5x",size:480000,pnl7d:482000,pr:3.2,entry:94250,pnlNow:86400,ago:"38min",res:[1,1,1,0,1,1,1,1,0,1]},{addr:"0x4b2d...a8f3",full:"0x4b2d6c8e1f",nick:"重仓狙击",tier:"精英",wr:78.6,dir:"LONG",lev:"3x",size:820000,pnl7d:324000,pr:4.1,entry:94800,pnlNow:41200,ago:"22min",res:[1,0,1,1,1,0,1,1,1,0]},{addr:"0xD4b1...C921",full:"0xD4b16e8a2f",nick:"逆势猎人",tier:"精英",wr:74.3,dir:"SHORT",lev:"4x",size:360000,pnl7d:186000,pr:2.8,entry:97100,pnlNow:-12800,ago:"15min",res:[1,1,0,1,0,1,1,0,1,1]},{addr:"0x9e1c...b4d2",full:"0x9e1c3f5a7b",nick:"稳健派",tier:"高手",wr:72.1,dir:"LONG",lev:"2x",size:240000,pnl7d:98000,pr:2.2,entry:95600,pnlNow:18400,ago:"1h",res:[1,0,1,1,0,1,1,1,0,1]},{addr:"0x3c8e...f1a9",full:"0x3c8e2d4f6a",nick:"波段猎手",tier:"高手",wr:70.8,dir:"LONG",lev:"4x",size:310000,pnl7d:156000,pr:2.5,entry:95100,pnlNow:32000,ago:"45min",res:[1,1,0,1,1,0,1,0,1,1]}];
+const now=Math.floor(Date.now()/1000);
+const SCAN_MARKERS=SCAN_LIST.map((t,i)=>({addr:t.full,nick:t.nick,tier:t.tier,wr:t.wr,pr:t.pr,dir:t.dir,lev:t.lev,price:t.entry,size:t.size,time:now-((i+1)*900+Math.floor(Math.random()*600)),pnl:t.pnlNow,pnlPct:t.pnlNow>=0?((t.pnlNow/t.size)*100).toFixed(1):((t.pnlNow/t.size)*100).toFixed(1),ago:t.ago,res:t.res}));
+const A_PRESETS=[{addr:"0x7a3f...e2c1",full:"0x7a3f8b2c4d",nick:"快刀手",wr:86.4},{addr:"0x4b2d...a8f3",full:"0x4b2d6c8e1f",nick:"重仓狙击",wr:78.6}];
+const A_DATA={addr:"0x7a3f...e2c1",full:"0x7a3f8b2c4d",nick:"快刀手",tier:"传奇",wr:86.4,total:342,wins:295,losses:47,pnl30d:1420000,pr:3.2,mdd:-8.2,avgHold:47,avgLev:4.8,avgWin:18200,avgLoss:-8400,maxWin:186000,maxLoss:-42000,pairs:["BTC","ETH","SOL"],positions:[{pair:"BTC",dir:"LONG",lev:"5x",entry:94250,size:480000,pnl:86400,pct:6.8,ago:"38分钟前",liq:78200,marginUsed:66200},{pair:"ETH",dir:"SHORT",lev:"3x",entry:3420,size:120000,pnl:-4800,pct:-1.2,ago:"2小时前",liq:4100,marginUsed:40000}],totalMargin:106200,availableMargin:18420,accountValue:124620,narrative:"这是一个典型的短线狙击手。他几乎从不持仓超过1小时——47分钟平均持仓，做完就跑。\n\n过去30天342笔交易，86%的胜率，每下7笔单只有1笔亏损。更关键的是，他赢的时候赚得比亏的时候多——平均每笔赢 $18.2K，平均每笔亏 $8.4K，盈亏比 3.2:1。\n\n最近一周状态极热：7天盈利 $482K，近10笔 8胜2负。",followAdvice:"跟单难度较高——他的止盈窗口只有几十分钟，反应慢可能吃不到利润。建议用自动跟单工具，或参考方向手动入场设好止损。",
+  // Radar 6维: winRate=胜率, profitRatio=盈亏比, capital=资金量(log归一化), absPnl=绝对收益(log归一化), stability=稳定性, recentForm=近期状态
+  // capital: $10K→20, $100K→50, $500K→75, $1M+→90. 他平均仓位$480K→74
+  // absPnl: $50K→30, $200K→50, $500K→70, $1M+→85, $1.4M→88
+  radar:{winRate:86,profitRatio:64,capital:74,absPnl:88,stability:78,recentForm:92},holdDist:[{r:"< 15m",p:18,n:62},{r:"15-30m",p:28,n:96},{r:"30-60m",p:32,n:109},{r:"1-2h",p:15,n:51},{r:"> 2h",p:7,n:24}],profitDist:[{r:">100%",n:5},{r:"50~100%",n:18},{r:"0~50%",n:272},{r:"-50~0%",n:38},{r:"<-50%",n:9}],hours:[0,0,0,1,2,3,5,8,12,15,18,14,10,12,15,18,20,22,18,14,10,6,3,1],dailyPnl:[13600,811,812,5350,5390,1860,-4200,8200,-2100,6400,3200,-1800,9500,4100,-3600,7200,2800,1200,-5100,8800,6200,-900,4500,3100,7800,-2400,5600,1900,8400,3700],curve:(()=>{const p=[];let v=0;[13600,811,812,5350,5390,1860,-4200,8200,-2100,6400,3200,-1800,9500,4100,-3600,7200,2800,1200,-5100,8800,6200,-900,4500,3100,7800,-2400,5600,1900,8400,3700].forEach(d=>{v+=d;p.push(v);});return p;})(),trades:(()=>{const t=[];let pr=91000;for(let i=0;i<25;i++){const d=Math.random()>.3?"LONG":"SHORT";const e=pr+(Math.random()-.5)*2000;const w=Math.random()<.86;const dx=w?(d==="LONG"?1:-1)*(200+Math.random()*1500):(d==="LONG"?-1:1)*(100+Math.random()*800);const ex=e+dx;const pnl=d==="LONG"?(ex-e)*5:(e-ex)*5;const hm=Math.floor(5+Math.random()*120);const ha=Math.floor(i*3+Math.random()*5);t.push({id:i,d,pair:["BTC","ETH","SOL"][i%3],entry:Math.round(e),exit:Math.round(ex),pnl:Math.round(pnl),pct:+((pnl/(e*5))*100).toFixed(2),hm,hs:hm<60?`${hm}m`:`${Math.floor(hm/60)}h${hm%60}m`,lev:`${Math.floor(3+Math.random()*5)}x`,w,ts:ha<1?"刚刚":ha<24?`${ha}h前`:`${Math.floor(ha/24)}d前`});pr=ex;}return t;})()};
+const ANALYZER_MARKERS=Array.from({length:8},(_,i)=>{const dir=Math.random()>.3?"LONG":"SHORT";const coin=["BTC","ETH","SOL"][i%3];const price=coin==="BTC"?94000+Math.random()*3000:coin==="ETH"?3300+Math.random()*200:165+Math.random()*10;const size=200000+Math.random()*400000;const pnl=Math.random()>.15?(5000+Math.random()*40000):-(2000+Math.random()*15000);return{addr:A_DATA.full,nick:A_DATA.nick,tier:A_DATA.tier,wr:A_DATA.wr,pr:A_DATA.pr,dir,lev:`${Math.floor(3+Math.random()*4)}x`,price:Math.round(price),size:Math.round(size),time:now-((i+1)*1800+Math.floor(Math.random()*1200)),pnl:Math.round(pnl),pnlPct:((pnl/size)*100).toFixed(1),ago:`${Math.floor(i*0.5+0.5)}h前`,res:[1,1,1,0,1,1,1,1,0,1],coin};});
+
+/* ═══ SCANNER OUTPUT ═══ */
+function ScannerOut({isSample,coin,onAnalyze}){const lc=SCAN_LIST.filter(d=>d.dir==="LONG").length,sc=SCAN_LIST.length-lc,lp=Math.round(lc/SCAN_LIST.length*100);
+  const consensus=lp>=60?"共识偏向做多":lp<=40?"共识偏向做空":"多空分歧";
+  return <div style={{position:"relative"}}>{isSample&&<SampleOverlay/>}{isSample&&<SampleBanner/>}
+<Card style={{background:"linear-gradient(135deg,rgba(14,203,129,0.12),rgba(252,213,53,0.06))",border:`1px solid ${C.up}35`,marginBottom:16,padding:"20px 22px"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{fontSize:11,color:C.up,fontFamily:MF,fontWeight:600,background:C.up+"18",padding:"3px 10px",borderRadius:4,letterSpacing:1}}>SCAN RESULT</span></div><div style={{fontSize:20,fontWeight:700,color:C.text1,lineHeight:1.5,marginBottom:10}}><span style={{color:C.up}}>🐋 </span>{lc} 个聪明钱做多、{sc} 个做空——{consensus} {coin}</div><div style={{fontSize:14,color:C.text2,lineHeight:1.9}}>过去1小时，{SCAN_LIST.length} 个高胜率大额地址活跃。传奇级「快刀手」和精英级「重仓狙击」同时做多，形成共振。逆势猎人在做空，胜率74.3%。</div></Card>
+<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>{[{l:"多头占比",v:`${lp}%`,c:C.up,s:`${lc}/${SCAN_LIST.length}`},{l:"多头净仓位",v:"+$4.8M",c:C.up,s:"过去1h"},{l:"最高胜率",v:"86.4%",c:C.yl,s:"快刀手"}].map((s,i)=><Card key={i} style={{textAlign:"center",padding:"14px",borderTop:`2px solid ${s.c}40`,position:"relative"}}><div style={{fontSize:11,color:C.text4,marginBottom:6,fontFamily:MF}}>{s.l}</div><div style={{fontSize:24,fontWeight:700,color:s.c,fontFamily:MF}}>{s.v}</div><div style={{fontSize:11,color:C.text4,marginTop:4}}>{s.s}</div></Card>)}</div>
+<div style={{marginBottom:16}}><Label>聪明钱开仓点位</Label><SmartMoneyChart key={coin} markers={SCAN_MARKERS} defaultCoin={coin} coins={[coin]} height={320}/></div>
+<Label>筛选结果 · 点击可深度分析</Label>
+<div style={{display:"flex",flexDirection:"column",gap:8}}>{SCAN_LIST.map((t,i)=><Card key={i} className="scan-card" style={{padding:"14px 16px",cursor:"pointer"}} onClick={()=>onAnalyze&&onAnalyze(t.addr,i)}><div style={{display:"flex",alignItems:"center",gap:12}}><Avatar addr={t.full} size={32}/><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontSize:15,color:C.text1}}>「{t.nick}」</span><HyperbotLink addr={t.full} style={{fontSize:11,fontFamily:MF}}>{t.addr}</HyperbotLink><span style={{padding:"2px 8px",borderRadius:4,fontSize:11,fontFamily:MF,fontWeight:600,background:t.tier==="传奇"?C.yl+"18":C.up+"15",color:t.tier==="传奇"?C.yl:C.up}}>{t.wr}%</span></div></div><div style={{display:"flex",alignItems:"center",gap:10,fontFamily:MF,fontSize:13}}><span style={{color:dc(t.dir),fontWeight:700,fontSize:12,background:dc(t.dir)+"15",padding:"2px 8px",borderRadius:4,border:`1px solid ${dc(t.dir)}30`}}>{t.dir} {t.lev}</span><span style={{color:C.text3}}>{fmt(t.size)}</span><span style={{color:t.pnlNow>=0?C.up:C.dn,fontWeight:600}}>{t.pnlNow>=0?"+":""}{fmt(t.pnlNow)}</span></div></div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}><WL r={t.res}/><span className="click-hint" style={{fontSize:11,color:C.yl,fontFamily:MF}}>点击分析 →</span></div></Card>)}</div>
+<Card style={{marginTop:16,padding:"18px 20px"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><span style={{fontSize:16}}>📍</span><span style={{fontWeight:700,fontSize:16,color:C.text1}}>共识判断</span></div>
+    {/* Long/Short ratio bar */}
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+      <span style={{fontSize:12,color:C.up,fontFamily:MF,fontWeight:700}}>多 {lp}%</span>
+      <div style={{flex:1,height:10,borderRadius:5,overflow:"hidden",display:"flex"}}>
+        <div style={{width:`${lp}%`,height:"100%",background:`linear-gradient(90deg,${C.up},${C.up}cc)`,borderRadius:"5px 0 0 5px"}}/>
+        <div style={{width:`${100-lp}%`,height:"100%",background:`linear-gradient(90deg,${C.dn}cc,${C.dn})`,borderRadius:"0 5px 5px 0"}}/>
+      </div>
+      <span style={{fontSize:12,color:C.dn,fontFamily:MF,fontWeight:700}}>{100-lp}% 空</span>
+    </div>
+    <div style={{fontSize:14,color:C.text2,lineHeight:1.9}}>{lc} 个做多、{sc} 个做空。其中传奇级「快刀手」做多。共识偏向做多，但逆势猎人（胜率 <span style={{color:C.yl}}>74.3%</span>）在做空。建议关注 <span style={{fontFamily:MF,color:C.yl}}>$94,250–$94,800</span> 的回调机会。</div></Card></div>;}
+
+/* ═══ ANALYZER OUTPUT (FULL v9 features + TradingView chart) ═══ */
+function AnalyzerOut({isSample}){
+  const[ht,sHt]=useState(null);const[page,setPage]=useState(0);const[pf,setPf]=useState("ALL");
+  const d=A_DATA;const mx=Math.max(...d.holdDist.map(x=>x.p));const hmx=Math.max(...d.hours);
+  const totalPnl=d.positions.reduce((s,p)=>s+p.pnl,0);const totalSize=d.positions.reduce((s,p)=>s+p.size,0);
+  const marginPct=Math.round((d.totalMargin/(d.totalMargin+d.availableMargin))*100);
+  const pdMax=Math.max(...d.profitDist.map(x=>x.n));
+  const ft=pf==="ALL"?d.trades:d.trades.filter(t=>t.pair===pf);const ps=10;const tp=Math.ceil(ft.length/ps);const pt=ft.slice(page*ps,(page+1)*ps);
+  const sugSize=Math.round(d.positions[0].size*.02/1000)*1000;
+
+  return <div style={{position:"relative"}}>{isSample&&<SampleOverlay/>}{isSample&&<SampleBanner/>}
+    {/* HERO: narrative + radar */}
+    <Card style={{background:"linear-gradient(135deg,rgba(252,213,53,0.08),rgba(14,203,129,0.04))",border:`1px solid ${C.yl}20`,padding:"22px 24px",marginBottom:16}}>
+      {/* Identity row */}
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}><Avatar addr={d.full} size={52}/><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontWeight:700,fontSize:24,color:C.text1}}>「{d.nick}」</span><span style={{padding:"4px 10px",borderRadius:5,fontSize:12,fontWeight:600,fontFamily:MF,background:C.yl+"18",color:C.yl}}>★ {d.tier}</span><HyperbotLink addr={d.full} style={{fontSize:13,fontFamily:MF}}>{d.addr}</HyperbotLink></div><div style={{display:"flex",gap:20,marginTop:10,fontFamily:MF,fontSize:13,flexWrap:"wrap"}}><span style={{color:C.text3}}>胜率 <span style={{color:C.up,fontWeight:700,fontSize:18}}>{d.wr}%</span></span><span style={{color:C.text3}}>30D <span style={{color:C.up,fontWeight:700,fontSize:16}}>+{fmt(d.pnl30d)}</span></span><span style={{color:C.text3}}>盈亏比 <span style={{color:C.yl,fontWeight:700,fontSize:16}}>{d.pr}:1</span></span><span style={{color:C.text3}}>MDD <span style={{color:C.dn,fontWeight:700}}>{d.mdd}%</span></span><span style={{color:C.text4}}>{d.total}笔 · 均{d.avgHold}min</span></div></div></div>
+      {/* Two-column: narrative left, radar right */}
+      <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
+        <div style={{flex:1,fontSize:15,color:C.text2,lineHeight:2,whiteSpace:"pre-line"}}>{d.narrative}</div>
+        <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",paddingTop:4}}>
+          <RadarChart values={d.radar} rawData={d}/>
+          <div style={{fontSize:10,color:C.text4,fontFamily:MF,marginTop:4}}>AI 综合评估</div>
+        </div>
+      </div>
+    </Card>
+    {/* Multi-position */}
+    <Card style={{marginBottom:16,padding:"16px 18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:8,height:8,borderRadius:"50%",background:C.up,boxShadow:`0 0 10px ${C.up}`,animation:"pulse 2s ease infinite"}}/><span style={{fontSize:14,fontWeight:600,color:C.text1}}>当前持仓</span><span style={{fontSize:12,color:C.text3,fontFamily:MF}}>{d.positions.length} 仓</span></div><span style={{color:totalPnl>=0?C.up:C.dn,fontWeight:700,fontSize:18,fontFamily:MF}}>{totalPnl>=0?"+":""}{fmt(totalPnl)}</span></div>
+      <table style={{width:"100%",borderCollapse:"collapse",fontFamily:MF,fontSize:13}}><thead><tr style={{color:C.text4,borderBottom:`1px solid ${C.divider}`,fontSize:11}}>{["币种","方向","杠杆","入场价","仓位","盈亏","盈亏%","清算价"].map(h=><th key={h} style={{padding:"6px 8px",textAlign:"left",fontWeight:500}}>{h}</th>)}</tr></thead><tbody>{d.positions.map((p,i)=><tr key={i} className="pos-row" style={{borderBottom:`1px solid ${C.divider}`}}><td style={{padding:"10px 8px",color:C.text1,fontWeight:600}}>{p.pair}</td><td style={{padding:"10px 8px",color:dc(p.dir),fontWeight:700}}><span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:6,height:6,borderRadius:"50%",background:dc(p.dir),boxShadow:`0 0 6px ${dc(p.dir)}44`}}/>{p.dir}</span></td><td style={{padding:"10px 8px",color:C.text2}}>{p.lev}</td><td style={{padding:"10px 8px",color:C.text2}}>${p.entry.toLocaleString()}</td><td style={{padding:"10px 8px",color:C.text2}}>{fmt(p.size)}</td><td style={{padding:"10px 8px",color:p.pnl>=0?C.up:C.dn,fontWeight:600}}>{p.pnl>=0?"+":""}{fmt(p.pnl)}</td><td style={{padding:"10px 8px",color:p.pct>=0?C.up:C.dn}}>{p.pct>=0?"+":""}{p.pct}%</td><td style={{padding:"10px 8px",color:C.dn,opacity:.7}}>${p.liq.toLocaleString()}</td></tr>)}</tbody></table>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginTop:12,paddingTop:10,borderTop:`1px solid ${C.divider}`}}><span style={{fontSize:12,color:C.text4}}>账户 <span style={{color:C.text2,fontWeight:600}}>{fmt(d.accountValue)}</span></span><div style={{flex:1,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:C.text4,fontFamily:MF}}>保证金</span><div style={{flex:1,maxWidth:200,height:6,borderRadius:3,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}><div style={{width:`${marginPct}%`,height:"100%",borderRadius:3,background:marginPct>80?"#f0b90b":C.up}}/></div><span style={{fontSize:12,color:marginPct>80?"#f0b90b":C.up,fontFamily:MF,fontWeight:600}}>{marginPct}%</span></div></div>
+    </Card>
+    {/* Follow advice */}
+    <Card style={{background:C.yl+"08",border:`1px solid ${C.yl}18`,padding:"18px 20px",marginBottom:16}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><span style={{fontSize:16}}>📍</span><span style={{fontWeight:700,fontSize:16,color:C.text1}}>跟单建议</span><div style={{marginLeft:"auto",display:"flex",gap:8}}>{[{l:"难度",v:"较高",c:"#f0b90b"},{l:"评分",v:"A+",c:C.yl}].map((x,i)=><span key={i} style={{padding:"4px 12px",borderRadius:5,fontSize:12,fontFamily:MF,fontWeight:600,background:x.c+"15",color:x.c,border:`1px solid ${x.c}30`}}>{x.l} {x.v}</span>)}</div></div><div style={{fontSize:14,color:C.text2,lineHeight:1.9}}>{d.followAdvice}</div><div style={{display:"flex",gap:10,marginTop:10,fontSize:12,fontFamily:MF,color:C.text3}}>建议跟单仓位: <span style={{color:C.yl,fontWeight:600}}>≤ {fmt(sugSize)}</span><span style={{color:C.text4}}>（最大仓位的2%）</span></div></Card>
+
+    {/* ═══ DATA SECTION ═══ */}
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,marginTop:4}}>
+      <div style={{flex:1,height:1,background:C.divider}}/>
+      <span style={{fontSize:11,color:C.text4,fontFamily:MF,letterSpacing:1.5,whiteSpace:"nowrap"}}>数据佐证</span>
+      <div style={{flex:1,height:1,background:C.divider}}/>
+    </div>
+    {/* Daily + Cumulative (separated) */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+      <Card style={{padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}><Label style={{marginBottom:0}}>每日盈亏</Label><span style={{fontSize:11,color:C.text4,fontFamily:MF}}>30日</span></div><DailyBarsChart daily={d.dailyPnl}/></Card>
+      <Card style={{padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}><Label style={{marginBottom:0}}>累计盈亏</Label><span style={{fontSize:14,fontWeight:700,color:C.up,fontFamily:MF}}>+{fmt(d.pnl30d)}</span></div><CumulativeChart data={d.curve}/></Card>
+    </div>
+    {/* Profit dist + Hold dist + KV */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+      <Card style={{padding:"14px 16px"}}><Label>盈利分布 ({d.total}笔)</Label>{d.profitDist.map((b,i)=>{const pos=i<3;return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><span style={{width:56,fontSize:11,color:C.text3,fontFamily:MF,textAlign:"right"}}>{b.r}</span><div style={{flex:1,height:14,background:"rgba(255,255,255,0.04)",borderRadius:3,overflow:"hidden"}}><div style={{width:`${(b.n/pdMax)*100}%`,height:"100%",background:(pos?C.up:C.dn)+"70",borderRadius:3}}/></div><span style={{width:32,fontSize:11,color:C.text2,fontFamily:MF,textAlign:"right"}}>{b.n}</span></div>})}<div style={{borderTop:`1px solid ${C.divider}`,marginTop:8,paddingTop:8,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontSize:12,fontFamily:MF,color:C.text3}}><div>均赢 <span style={{color:C.up}}>{fmt(d.avgWin)}</span></div><div>均亏 <span style={{color:C.dn}}>{fmt(d.avgLoss)}</span></div><div>最大赢 <span style={{color:C.up}}>+{fmt(d.maxWin)}</span></div><div>最大亏 <span style={{color:C.dn}}>{fmt(d.maxLoss)}</span></div></div></Card>
+      <Card style={{padding:"14px 16px"}}><Label>持仓时长</Label>{d.holdDist.map((h,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><span style={{width:48,fontSize:11,color:C.text3,fontFamily:MF,textAlign:"right"}}>{h.r}</span><div style={{flex:1,height:14,background:"rgba(255,255,255,0.04)",borderRadius:3,overflow:"hidden"}}><div style={{width:`${h.p}%`,height:"100%",background:`rgba(14,203,129,${.15+(h.p/mx)*.5})`,borderRadius:3}}/></div><span style={{width:24,fontSize:11,color:C.text2,fontFamily:MF}}>{h.p}%</span><span style={{width:32,fontSize:10,color:C.text4,fontFamily:MF}}>{h.n}笔</span></div>)}</Card>
+      <Card style={{padding:"14px 16px"}}><Label>分析</Label>{[{l:"平均杠杆",v:`${d.avgLev}x`},{l:"胜/负",v:`${d.wins} / ${d.losses}`},{l:"偏好币种",v:d.pairs.join(", ")},{l:"近7D胜率",v:"92%"},{l:"回报率",v:`${((d.pnl30d/d.accountValue)*100).toFixed(1)}%`}].map((kv,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:13}}><span style={{color:C.text4}}>{kv.l}</span><span style={{color:C.text2,fontFamily:MF,fontWeight:500}}>{kv.v}</span></div>)}<div style={{borderTop:`1px solid ${C.divider}`,marginTop:6,paddingTop:8}}><div style={{fontSize:11,color:C.text4,marginBottom:4}}>活跃时段 (UTC)</div><div style={{display:"flex",gap:1.5}}>{d.hours.map((v,i)=><div key={i} title={`${i}:00 — ${v} 笔`} style={{flex:1,height:24,borderRadius:2,background:v===0?"rgba(255,255,255,0.02)":`rgba(14,203,129,${.08+(v/hmx)*.55})`,cursor:"default"}}/>)}</div><div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>{[0,6,12,18,23].map(h=><span key={h} style={{fontSize:9,color:C.text4,fontFamily:MF}}>{h}</span>)}</div></div></Card>
+    </div>
+
+    {/* TradingView K-line chart */}
+    <div style={{marginBottom:14}}><Label>开平仓点位 · {d.nick} 的交易标注</Label><SmartMoneyChart markers={ANALYZER_MARKERS} defaultCoin="BTC" coins={d.pairs} height={340}/></div>
+
+    {/* Trade table with filter + pagination */}
+    <Card style={{padding:"16px 18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><Label style={{marginBottom:0}}>交易记录</Label><div style={{display:"flex",gap:4}}>{["ALL","BTC","ETH","SOL"].map(p=><button key={p} className="filter-btn" onClick={()=>{setPf(p);setPage(0);}} style={{padding:"3px 8px",borderRadius:4,border:pf===p?`1px solid ${C.yl}`:"1px solid "+C.cardBorder,background:pf===p?C.yl+"12":C.card,color:pf===p?C.yl:C.text4,cursor:"pointer",fontSize:10,fontFamily:MF}}>{p==="ALL"?"全部":p}</button>)}</div></div><span style={{fontSize:11,color:C.text4,fontFamily:MF}}>{ft.length} 笔</span></div>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:MF}}><thead><tr style={{color:C.text4,borderBottom:`1px solid ${C.divider}`}}>{["#","时间","币种","方向","杠杆","入场","出场","盈亏","盈亏%","持仓",""].map(h=><th key={h} style={{padding:"6px 8px",textAlign:"left",fontWeight:500}}>{h}</th>)}</tr></thead><tbody>{pt.map((t,i)=><tr key={t.id} className="tbl-row" onMouseEnter={()=>sHt(page*ps+i)} onMouseLeave={()=>sHt(null)} style={{borderBottom:`1px solid ${C.divider}`,cursor:"pointer"}}><td style={{padding:"8px",color:C.text4}}>{page*ps+i+1}</td><td style={{padding:"8px",color:C.text3}}>{t.ts}</td><td style={{padding:"8px",color:C.text2}}>{t.pair}</td><td style={{padding:"8px",color:dc(t.d),fontWeight:600}}>{t.d}</td><td style={{padding:"8px",color:C.text3}}>{t.lev}</td><td style={{padding:"8px",color:C.text2}}>${t.entry.toLocaleString()}</td><td style={{padding:"8px",color:C.text2}}>${t.exit.toLocaleString()}</td><td style={{padding:"8px",color:t.pnl>=0?C.up:C.dn,fontWeight:600}}>{t.pnl>=0?"+":""}{fmt(t.pnl)}</td><td style={{padding:"8px",color:t.pct>=0?C.up:C.dn}}>{t.pct>=0?"+":""}{t.pct}%</td><td style={{padding:"8px",color:C.text3}}>{t.hs}</td><td style={{padding:"8px"}}><span style={{display:"inline-block",width:16,height:16,borderRadius:3,background:t.w?C.up:C.dn,color:"#000",fontSize:8,fontWeight:700,textAlign:"center",lineHeight:"16px"}}>{t.w?"W":"L"}</span></td></tr>)}</tbody></table>
+      {tp>1&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:12}}><button className="page-btn" onClick={()=>setPage(Math.max(0,page-1))} disabled={page===0} style={{padding:"4px 10px",borderRadius:4,border:"1px solid "+C.cardBorder,background:C.card,color:page===0?C.text4:C.text2,cursor:page===0?"default":"pointer",fontSize:11,fontFamily:MF}}>← 上一页</button><span style={{fontSize:11,color:C.text3,fontFamily:MF}}>{page+1} / {tp}</span><button className="page-btn" onClick={()=>setPage(Math.min(tp-1,page+1))} disabled={page>=tp-1} style={{padding:"4px 10px",borderRadius:4,border:"1px solid "+C.cardBorder,background:C.card,color:page>=tp-1?C.text4:C.text2,cursor:page>=tp-1?"default":"pointer",fontSize:11,fontFamily:MF}}>下一页 →</button></div>}
+    </Card>
+  </div>;
+}
+
+/* ═══ MAIN APP ═══ */
+function App(){
+  const[sk,setSk]=useState("analyzer");const[live,setLive]=useState(true);const[run,setRun]=useState(false);
+  const[coin,setCoin]=useState("BTC");const[tw,setTw]=useState("1h");const[ai,setAi]=useState(A_PRESETS[0].addr);const[sp,setSp]=useState(0);
+  const skill=SKILLS[sk];
+  const switchSk=id=>{setSk(id);setLive(false);setRun(false);};
+  const go=()=>{setRun(true);setLive(false);setTimeout(()=>{setRun(false);setLive(true);},1600);};
+  const handleAnalyze=(addr,idx)=>{setSk("analyzer");setAi(addr);setSp(idx<A_PRESETS.length?idx:0);setRun(true);setLive(false);setTimeout(()=>{setRun(false);setLive(true);},1600);};
+
+  return <div style={{display:"flex",minHeight:"100vh",background:C.bg,color:C.text2,fontFamily:SF,fontSize:14}}>
+    <div style={{width:260,minWidth:260,borderRight:`1px solid ${C.cardBorder}`,display:"flex",flexDirection:"column",background:"#0a0e1a",overflowY:"auto",maxHeight:"100vh"}}>
+      <div style={{padding:"16px 16px 12px",borderBottom:`1px solid ${C.divider}`}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:7,background:`linear-gradient(135deg,${skill.accent},${skill.accentAlt})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{skill.icon}</div><div><div style={{fontWeight:700,fontSize:15,color:C.text1}}>SeerClaw</div><div style={{fontSize:10,color:C.text4,fontFamily:MF,letterSpacing:1}}>SMART MONEY TOOLS</div></div></div></div>
+      <div style={{padding:"12px 12px 0",borderBottom:`1px solid ${C.divider}`}}><div style={{fontSize:10,color:C.text4,marginBottom:8,fontFamily:MF,letterSpacing:1.5,paddingLeft:4}}>SKILLS</div><div style={{display:"flex",flexDirection:"column",gap:3,paddingBottom:12}}>{Object.values(SKILLS).map(s=><button key={s.id} className="skill-tab" onClick={()=>switchSk(s.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:"none",textAlign:"left",background:sk===s.id?s.accent+"12":"transparent",cursor:"pointer",borderLeft:sk===s.id?`3px solid ${s.accent}`:"3px solid transparent"}}><span style={{fontSize:16}}>{s.icon}</span><div><div style={{fontSize:13,color:sk===s.id?s.accent:C.text3,fontWeight:600}}>{s.name}</div><div style={{fontSize:10,color:C.text4,fontFamily:MF}}>{s.nameEn}</div></div></button>)}</div></div>
+      <div style={{padding:"14px 16px",flex:1,display:"flex",flexDirection:"column",gap:16}}>
+        <div style={{fontSize:12,color:C.text3,lineHeight:1.7,padding:"10px 12px",background:C.card,borderRadius:8,border:`1px solid ${C.cardBorder}`,borderLeft:`3px solid ${skill.accent}40`}}>{skill.desc}</div>
+        {sk==="scanner"&&<><div><div style={{fontSize:12,color:C.text3,marginBottom:6,fontWeight:500}}>选择币对</div><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{["BTC","ETH","SOL","DOGE","WIF"].map(c=><button key={c} className="coin-btn" onClick={()=>setCoin(c)} style={{padding:"6px 14px",borderRadius:6,border:coin===c?`1px solid ${skill.accent}`:"1px solid "+C.cardBorder,background:coin===c?skill.accent+"15":C.card,color:coin===c?skill.accent:C.text3,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:MF}}>{c}</button>)}</div></div><div><div style={{fontSize:12,color:C.text3,marginBottom:6,fontWeight:500}}>时间窗口</div><div style={{display:"flex",gap:5}}>{["30m","1h","4h","24h"].map(t=><button key={t} className="coin-btn" onClick={()=>setTw(t)} style={{padding:"6px 12px",borderRadius:6,border:tw===t?`1px solid ${skill.accent}`:"1px solid "+C.cardBorder,background:tw===t?skill.accent+"15":C.card,color:tw===t?skill.accent:C.text3,cursor:"pointer",fontSize:12,fontFamily:MF}}>{t}</button>)}</div></div></>}
+        {sk==="analyzer"&&<><div><div style={{fontSize:12,color:C.text3,marginBottom:6,fontWeight:500}}>输入地址</div><input value={ai} onChange={e=>setAi(e.target.value)} placeholder="0x..." style={{width:"100%",padding:"10px 12px",borderRadius:6,border:"1px solid "+C.cardBorder,background:C.card,color:C.text2,fontSize:13,fontFamily:MF}}/></div><div><div style={{fontSize:12,color:C.text3,marginBottom:6,fontWeight:500}}>或选择已知地址</div><div style={{display:"flex",flexDirection:"column",gap:4}}>{A_PRESETS.map((a,i)=><button key={i} className="preset-btn" onClick={()=>{setSp(i);setAi(a.addr);}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:6,border:"none",textAlign:"left",background:sp===i?C.yl+"0a":C.card,cursor:"pointer"}}><Avatar addr={a.full} size={22}/><div style={{flex:1}}><div style={{fontSize:12,color:sp===i?C.yl:C.text3,fontWeight:600}}>「{a.nick}」</div><div style={{fontSize:10,color:C.text4,fontFamily:MF}}>{a.addr}</div></div><span style={{fontSize:12,color:C.up,fontFamily:MF}}>{a.wr}%</span></button>)}</div></div></>}
+        <button className="exec-btn" onClick={go} disabled={run} style={{width:"100%",padding:"12px 0",borderRadius:8,border:"none",background:run?skill.accent+"28":`linear-gradient(135deg,${skill.accent},${skill.accentAlt})`,color:run?skill.accent:"#000",fontSize:14,fontWeight:700,cursor:run?"wait":"pointer",fontFamily:SF,letterSpacing:2}}>{run?"分析中...":"▶ 开始分析"}</button>
+        <div style={{marginTop:"auto",fontSize:10,color:C.text4,fontFamily:MF,lineHeight:1.6}}>数据源 Hyperliquid API<br/>⚠ 不构成投资建议</div>
+      </div>
+    </div>
+    <div style={{flex:1,padding:"20px 36px",overflowY:"auto",maxHeight:"100vh"}}>{run?<LoadingState skill={skill} sk={sk} coin={coin} addr={ai||A_PRESETS[sp].addr}/>:<div className="content-fade" style={{maxWidth:1200,width:"100%"}}>{sk==="scanner"&&<ScannerOut isSample={!live} coin={coin} onAnalyze={handleAnalyze}/>}{sk==="analyzer"&&<AnalyzerOut isSample={!live}/>}</div>}</div>
+  </div>;
+}
+ReactDOM.render(React.createElement(App),document.getElementById("root"));
+</script>
+</body>
+</html>
