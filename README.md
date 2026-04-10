@@ -20,13 +20,33 @@ Build and maintain the Analyzer side of the SeerClaw smart money product:
 - per-coin chart analysis
 - wallet evaluation UI
 
+### 3. `yield-desk`
+Stablecoin yield decision desk for comparing CEX and DeFi earn products.
+
+> Status: **PM-spec / engineering handoff package**
+>
+> This package is intentionally **not production-complete**. It is meant to help engineering teammates continue from an already-defined product spec, high-fidelity prototype, L2 scoring logic, and explicit TODO list.
+
+What is already strong:
+- clear 4-layer pipeline (`L1 → L2 → L3 → L4`)
+- solid L2 scoring foundation
+- high-fidelity frontend prototype
+- useful platform / protocol metadata
+- L2 tests passing (`16/16`)
+
+What still needs engineering work:
+- Antseer API contract confirmation
+- non-Binance CEX connector implementation
+- L3 env / key / deployment wiring
+- frontend mock → real data injection
+- fuller L1 / E2E reliability coverage
+
 ## Layout
 
-Each skill is a standalone package with:
+Each skill is a standalone package. Most packages include:
 - `SKILL.md`
+- `README.md` / `README.zh.md`
 - `agents/openai.yaml`
 - `assets/`
-- `references/`
-- `scripts/`
-- `templates/`
+- optional `references/`, `scripts/`, `templates/`
 - `VERSION`
