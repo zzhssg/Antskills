@@ -1,0 +1,7 @@
+interface:
+  display_name: "DualYield"
+  short_description: "Compare dual-yield / dual-investment products across CEX venues."
+  icon_small: "./assets/dualyield-small.svg"
+  icon_large: "./assets/dualyield-card.svg"
+  brand_color: "#3B82F6"
+  default_prompt: "Use $dualyield to compare dual-investment products, rank strike setups, and hand the remaining engineering work to the team."

@@ -41,6 +41,26 @@ What still needs engineering work:
 - frontend mock → real data injection
 - fuller L1 / E2E reliability coverage
 
+### 4. `dualyield`
+Dual-investment strike selector for comparing CEX dual-currency products.
+
+> Status: **PM-spec / engineering handoff package**
+>
+> This package is intentionally **not production-complete**. It is meant to help engineering teammates continue from an already-defined PRD, L2 scoring engine, L3 template conclusion logic, and high-fidelity frontend prototype.
+
+What is already strong:
+- strong L2 probability / ranking engine
+- L3 template-based conclusion generator
+- detailed PRD and technical onboarding docs
+- high-fidelity frontend prototype
+- tests passing (`32/32`)
+
+What still needs engineering work:
+- Antseer DCI / market endpoint confirmation
+- Binance and other CEX connector implementation
+- frontend mock → real data injection
+- cache and runtime env wiring
+
 ## Layout
 
 Each skill is a standalone package. Most packages include:
@@ -48,5 +68,5 @@ Each skill is a standalone package. Most packages include:
 - `README.md` / `README.zh.md`
 - `agents/openai.yaml`
 - `assets/`
-- optional `references/`, `scripts/`, `templates/`
+- optional `references/`, `scripts/`, `templates/`, `docs/`, `tests/`
 - `VERSION`
