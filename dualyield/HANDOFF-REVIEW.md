@@ -2,51 +2,51 @@
 
 ## Verdict
 
-这是一个 **质量不错的半成品 PM→Engineering handoff package**。
+这是一个 **质量不错的 PM→Engineering handoff package**。
 
-它的价值不在于“已经全部做完”，而在于：
-- 双币投产品定义已经清楚
-- L2 概率/评分逻辑已经基本成型
-- L3 模板结论已经能稳定工作
-- 前端高保真原型已经足够指导实现
-- 技术待办已经明确拆开
+它的核心价值不在“已经上线”，而在于：
+- 评分模型已经清楚
+- 双币投推荐逻辑已经成型
+- 前端原型已经能表达产品 intent
+- 技术待办和入门路径已经写出来了
 
 ## What is already good
 
-- `docs/PRD.md` 对产品定位、L1/L2/L3/L4 结构、组件和公式定义得比较完整
-- `pipeline/l2_compute/` 覆盖 TA、触达概率、评分、过滤、排序、异常检测，当前测试通过 `32/32`
-- `pipeline/l3_decision/decision.py` 已有可上线首版的模板结论模式
-- `frontend/dualyield.html` 是表达力很强的高保真前端原型
-- `docs/TECH-ONBOARDING.md` 对工程接手比较友好
+- L2 计算层完整，核心概率 / TA / 排序 / 异常检测都已实现
+- `tests/test_l2.py` 当前通过 `32/32`
+- `docs/PRD.md` 足够详细，适合工程接手
+- `frontend/dualyield.html` 是可用的高保真原型
+- `docs/TECH-ONBOARDING.md` 和 `docs/TODO-TECH.md` 结构清楚
+- L3 模板结论已可工作，不需要等 LLM 才能出结果
 
 ## Main engineering gaps
 
-### 1. L1 not production complete
-- Antseer 端点还未确认
-- Binance DCI 与 market fetch 尚未实现完成
-- OKX / Bybit / Bitget / KuCoin 等仍主要是 stub
+### 1. L1 not production-complete
+- Antseer 端点仍是存根
+- Binance / OKX / Bybit / Bitget / DeFi 数据抓取未完成
+- 真实市场数据与 IV 数据还没接完
 
-### 2. Runtime wiring unfinished
-- `.env` / API Key / secrets 管理尚未接入
-- Redis 缓存仍停留在设计和 TODO 阶段
+### 2. Frontend still mock-only
+- `frontend/dualyield.html` 目前仍是原型态
+- 还没有把 orchestrator 输出灌进前端
 
-### 3. Frontend still mock-only
-- `frontend/dualyield.html` 还没真正接 `orchestrator.py` 输出
-- 真实数据注入方式还未锁定
+### 3. Pipeline integration still incomplete
+- orchestrator 原先引用了不存在的 L3 hook
+- 真实 E2E 运行链路仍未完成收口
 
-### 4. Market-data precision still expandable
-- Deribit IV 仍未接入
-- 阶梯 APR 等更细节的收益逻辑仍待补充
+### 4. Ops / env / cache not ready
+- API key / env 管理未收口
+- Redis 缓存未实现
+- 生产依赖和部署方式未固定
+
+## Known packaging-time fix
+
+- `SKILL.md` frontmatter 已修正为可校验格式
+- 增加了分享所需 README / metadata / handoff facade
+- 为 L3 增加了模板模式兼容入口，避免 orchestrator 直接因缺失符号报错
 
 ## Suggested next owners
 
-- **Backend engineer**: L1 connectors, env wiring, cache, orchestration hardening
-- **Frontend engineer**: mock → real data injection and state handling
-- **PM / design**: verify copy tone, scenario simulation correctness, and sort/filter UX priorities
-
-## Share note
-
-分享给技术同事时，建议直接说明：
-
-> 这是一个“产品定义已经比较完整、但工程接线还没做完”的 skill 包。
-> 请优先看 `HANDOFF-REVIEW.md`、`TODO-TECH.md` 和 `docs/TECH-ONBOARDING.md`，不要默认它已经是可直接上线的成品。
+- **Backend engineer**: L1 connectors + market/IV fetch + cache/env wiring
+- **Frontend engineer**: mock → real data injection + interaction hardening
+- **PM / design**: review top-3 explanation quality and final decision copy

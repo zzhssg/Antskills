@@ -1,36 +1,36 @@
 # DualYield
 
-Dual-investment strike selector for comparing CEX dual-currency products and recommending high-yield, lower-touch-probability setups.
+Dual-investment / DCI recommendation desk for finding high-yield, lower-touch-probability strike candidates across CEX venues.
 
 > **Status: PM-spec / engineering handoff package**
 >
-> This is intentionally **not a production-complete integration**. It is a shareable package for engineering teammates to continue from an already-defined product spec, scoring engine, frontend prototype, and technical TODO list.
+> This package is intentionally **not production-complete**. It is a shareable package for engineering teammates to continue from an already-defined product spec, scoring engine, template decision layer, and high-fidelity frontend prototype.
 
 ## What it contains
 
-- 4-stage pipeline (`L1 → L2 → L3 → L4`)
-- product and technical documentation
+- dual-yield product + technical PRD
+- L1→L2→L3 pipeline skeleton
+- strong L2 scoring engine with tests
+- template-based L3 conclusion generation
 - high-fidelity frontend prototype
-- L2 quantitative scoring engine
-- L3 template-based conclusion generator
 - platform metadata
-- technical onboarding and TODO docs
+- engineering onboarding and TODO docs
 
 ## Current completion summary
 
 ### Strong already
-- L2 scoring logic is solid and test-covered
-- L3 template mode works without needing an LLM
-- frontend prototype communicates the full intended UX
-- PRD and technical handoff docs are already detailed
-- tests currently pass (`32/32`)
+- L2 compute layer is the strongest part and currently passes `32/32` tests
+- PRD is detailed and implementation-oriented
+- frontend prototype is already expressive enough for engineering handoff
+- technical onboarding and TODO docs are present
+- L3 template decision logic exists and can be used without an LLM
 
 ### Still incomplete
-- Antseer DCI and market API contracts are unresolved
-- Binance data connector is scaffolded but not wired
-- most non-Binance CEX connectors are still stubs
-- frontend still renders mock data
-- cache / real environment wiring is unfinished
+- Antseer and exchange connectors are mostly stubs
+- frontend still uses mock data rather than real orchestrator output
+- pipeline had a broken L3 orchestration hook and still needs full real-data wiring
+- no production-ready cache / env / API integration yet
+- package facade was missing before this packaging pass
 
 ## Read this first
 
@@ -42,33 +42,24 @@ Dual-investment strike selector for comparing CEX dual-currency products and rec
 ## Quick start
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m unittest tests.test_l2 -v
-python pipeline/orchestrator.py
+python3 -m unittest tests.test_l2 -v
 ```
 
-## Folder overview
+Optional smoke test:
 
-```text
-dualyield/
-├── SKILL.md
-├── README.md
-├── README.zh.md
-├── HANDOFF-REVIEW.md
-├── TODO-TECH.md
-├── docs/
-├── pipeline/
-├── frontend/
-├── data/
-└── tests/
+```bash
+python3 - <<'PY'
+import asyncio, sys
+sys.path.insert(0, '.')
+from pipeline.orchestrator import run_pipeline
+print(asyncio.run(run_pipeline({"intent":"earn_yield","underlying":"BTC","principal":10000,"durations":[7,14],"risk":"balanced"})))
+PY
 ```
 
 ## Sharing intent
 
-This package is meant to be shared with engineering teammates so they can:
-- reuse the probability / ranking logic
-- understand the intended product UX quickly
-- see exactly what is still missing
-- continue implementation without re-deriving the product logic
+This repo is meant to be shared with engineering teammates so they can:
+- reuse the scoring model and probability logic
+- understand the intended DualYield UX quickly
+- see what is already done vs. what is still missing
+- continue implementation without re-deriving the product logic from scratch

@@ -1,54 +1,75 @@
-# DualYield · 技术同事待办清单
+# DualYield — 技术待办清单
 
-> 本文件是分享用摘要版；更细的实施拆分见 `docs/TODO-TECH.md`。
-> 标记：🔴 阻塞上线 · 🟡 重要但可后补 · 🟢 优化项
+> 🔴 阻塞上线 · 🟡 上线后优化 · 🟢 锦上添花
 
-## 一、L1 数据层
+---
 
-### 🔴 1.1 Antseer 主通道
-- [ ] 确认 DCI 产品聚合端点
-- [ ] 确认市场数据端点（K线 + 现价）
-- [ ] 实现 `fetch_dci_products()` / `fetch_market()`
-- [ ] 完成字段映射到统一 schema
+## 🔴 P0 — 阻塞上线
 
-### 🔴 1.2 Binance 接线
-- [ ] 填入 API Key / Secret
-- [ ] 实现 DCI 产品获取
-- [ ] 实现公开 market 数据获取
-- [ ] 验证签名与错误处理
+### 1. Antseer 端点确认
+**文件**: `pipeline/l1_data/sources/antseer.py`
+- [ ] 确认 Antseer 是否有 DCI 产品聚合端点
+- [ ] 确认市场数据端点 (K线+现货价)
+- [ ] 实现 `fetch_dci_products()` + `fetch_market()`
+- [ ] 字段映射到统一 schema
 
-### 🟡 1.3 其他 CEX
-- [ ] OKX / Bybit / Bitget / KuCoin 接线
-- [ ] 各家字段映射和错误处理
+### 2. Binance DCI 接入
+**文件**: `pipeline/l1_data/sources/binance.py`
+- [ ] 填入 API Key + Secret
+- [ ] 实现产品列表获取 + K 线获取
+- [ ] 验证签名
 
-## 二、前端集成
+### 3. 前端集成真实数据
+**文件**: `frontend/dualyield.html`
+- [ ] 替换 mock 数据为 orchestrator 输出
+- [ ] 确定注入方式 (fetch API / 模板替换)
 
-### 🔴 2.1 mock → real data
-- [ ] 将 `frontend/dualyield.html` 的 mock 数据替换为 `orchestrator.py` 输出
-- [ ] 确定注入方式（API / 模板替换 / 其他）
+---
 
-## 三、运行环境
+## 🟡 P1 — 上线后一周
 
-### 🟡 3.1 环境变量
-- [ ] 配置 Antseer API Key
-- [ ] 配置 Binance API Key / Secret
-- [ ] 约定本地 / 测试 / 线上环境变量命名
+### 4. OKX / Bybit / Bitget / KuCoin 接入
+**文件**: `pipeline/l1_data/sources/cex_others.py`
+- [ ] 每家: 签名实现 + 字段映射 + 错误处理 (各 0.5 天)
 
-### 🟡 3.2 缓存
-- [ ] 引入 Redis 缓存（产品 TTL 10min，市场 TTL 1min）
+### 5. Redis 缓存
+- [ ] 产品缓存 TTL 10min, 市场缓存 TTL 1min
 
-## 四、算法与精度
+### 6. Deribit IV 接入
+- [ ] 公开 API, 补充波动率估算精度
 
-### 🟡 4.1 波动率与市场数据
-- [ ] 接入 Deribit IV，提升触达概率估算精度
+---
 
-### 🟢 4.2 收益逻辑细化
-- [ ] 支持阶梯 APR
-- [ ] 继续补 platform meta 自动更新
+## 🟢 P2 — 后续迭代
 
-## 五、测试与交付
+### 7. LLM 增强结论
+- [ ] 接入 Claude Sonnet 生成带 TA 解读的结论
 
-### 🟡 5.1 测试
-- [ ] 保持 `tests/test_l2.py` 持续通过
-- [ ] 增加 L1 fixture / integration tests
-- [ ] 增加前端数据注入后的最小 E2E 验证
+### 8. 阶梯利率
+- [ ] 部分 CEX 对大额有阶梯 APR, 按本金取对应档
+
+### 9. platform_meta 自动更新
+- [ ] 定期抓取 PoR 状态
+
+---
+
+## 文件变更地图
+
+```text
+需要改动:
+  pipeline/l1_data/sources/antseer.py     ← P0
+  pipeline/l1_data/sources/binance.py     ← P0
+  pipeline/l1_data/sources/cex_others.py  ← P1
+  pipeline/l1_data/fetcher.py             ← P1 (加缓存)
+  frontend/dualyield.html                 ← P0 (真实数据)
+
+不需要改动:
+  pipeline/l2_compute/                    ✅ 完成, 32/32 测试通过
+  pipeline/l3_decision/                   ✅ 模板模式完成
+  pipeline/orchestrator.py                ✅ 基本完成，仍待真实数据收口
+  data/platform_meta.yaml                 ✅ 完成
+```
+
+---
+
+补充说明：原始待办位于 `docs/TODO-TECH.md`，此根目录副本用于 shareable package 规范。

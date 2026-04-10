@@ -1,88 +1,67 @@
 ---
 name: dualyield
-description: "Dual-yield / dual investment strategist for comparing CEX dual-currency products, ranking strike-duration combinations by APR and touch probability, and producing a shareable PM→engineering handoff package. Use when evaluating 双币投 / dual investment / DCI / sharkfin style products, choosing strike levels, comparing Binance/OKX/Bybit/Bitget/KuCoin style offerings, or handing a dual-yield product workflow to engineering for implementation."
-compatibility: filesystem, python3
+description: "DualYield strategist for comparing dual investment / DCI products across CEX venues, scoring strike-duration candidates by yield and touch probability, and packaging a PM-defined dual-yield recommendation workflow for engineering handoff or further implementation. Use when users mention 双币投, dual investment, DCI, 双币理财, strike selection, or want to package / continue this dual-yield recommendation skill honestly."
+compatibility: filesystem access required; Python 3 recommended for tests and pipeline validation.
 ---
 
 # DualYield Strategist Skill
 
 ## Status
 
-这是一个 **产品定义很完整、工程接线未完成的 handoff skill 包**。
+这是一个 **PM 规格完成、工程未完工的 handoff package**。
 
 适合：
-- 产品经理把双币投产品逻辑、评分方法、前端原型交给工程
-- 工程同事基于现有 L2/L3 和前端原型继续补数据接入与真实渲染
+- 产品经理把双币投推荐逻辑、评分模型、前端原型交给工程继续做
+- 工程同事复用现有 L2 / L3 / 前端原型，继续补齐 L1 接口和真实数据接线
 
 不适合直接当作：
-- 已完成全部 API 联调的生产 skill
-- 已经可以直接上线的双币投成品工具
+- 已经完成联调并可上线的 production skill
+- 已经接通真实 Antseer / Binance / 其他 CEX 数据源的成品包
 
 ## What is already strong
 
-- L2 核心算法完成度高：到达概率、风险过滤、评分、排序、异常检测
-- L3 模板结论已完成，不依赖 LLM 也能产出稳定结论
-- `frontend/dualyield.html` 是完整高保真前端原型
-- PRD、技术待办、技术 onboarding 文档齐全
-- 单测通过：`32/32`
+- L2 计算评分层完整，32/32 测试通过
+- PRD、技术待办、入门文档都比较完整
+- 前端高保真原型已成型，信息架构清楚
+- 模板式 L3 结论生成已明确，不依赖 LLM 才能工作
 
 ## What engineering still needs to finish
 
-优先读：`TODO-TECH.md`
-
 高优先缺口：
-- Antseer DCI / 市场端点确认并接入
-- Binance DCI 与公开市场数据接线
-- 其他 CEX connector 补齐
-- 前端 mock → orchestrator 输出注入
-- 缓存与真实环境配置
+- Antseer DCI / 市场数据端点确认并接入
+- Binance / 其他 CEX 数据获取实现
+- 前端 mock → orchestrator 输出接线
+- 真实缓存 / 波动率 / 环境变量收口
 
-## Package map
+## File index
 
-```text
-dualyield/
-├── SKILL.md
-├── README.md / README.zh.md
-├── VERSION
-├── requirements.txt
-├── .env.example
-├── TODO-TECH.md
-├── HANDOFF-REVIEW.md
-├── docs/
-├── agents/openai.yaml
-├── assets/
-├── data/
-├── frontend/
-├── pipeline/
-└── tests/
-```
+- `pipeline/l1_data/` — 数据获取层
+- `pipeline/l2_compute/` — 计算评分层
+- `pipeline/l3_decision/` — 结论生成层
+- `pipeline/orchestrator.py` — Pipeline 编排
+- `data/platform_meta.yaml` — 平台元数据
+- `frontend/dualyield.html` — 高保真前端原型
+- `tests/test_l2.py` — L2 单元测试
+- `docs/PRD.md` — 产品需求文档
+- `docs/TODO-TECH.md` — 技术同事待办
+- `docs/TECH-ONBOARDING.md` — 技术入门指南
 
-## Pipeline 执行顺序
-
-```text
-Phase 0 用户参数 → L1 数据获取 → L2 计算评分 → L3 结论生成 → L4 渲染
-```
-
-## Suggested handoff reading order
+## Suggested reading order
 
 1. `README.md`
 2. `HANDOFF-REVIEW.md`
 3. `TODO-TECH.md`
 4. `docs/PRD.md`
 5. `docs/TECH-ONBOARDING.md`
-6. `pipeline/` 与 `frontend/dualyield.html`
 
 ## Quick commands
 
 ```bash
-pip install -r requirements.txt
-python -m unittest tests.test_l2 -v
-python pipeline/orchestrator.py
+python3 -m unittest tests.test_l2 -v
+python3 - <<'PY'
+import asyncio, sys
+sys.path.insert(0, '.')
+from pipeline.orchestrator import run_pipeline
+print(asyncio.run(run_pipeline({"intent":"earn_yield","underlying":"BTC","principal":10000,"durations":[7,14],"risk":"balanced"})))
+PY
 ```
-
-## Notes for engineering
-
-- `frontend/dualyield.html` 当前仍是 mock 驱动原型
-- `pipeline/l2_compute/` 是当前最值得直接复用的部分
-- `pipeline/l3_decision/decision.py` 默认使用模板结论，不阻塞首版上线
-- `docs/TODO-TECH.md` 保留了更细的实施拆分，根目录 `TODO-TECH.md` 是分享用摘要版

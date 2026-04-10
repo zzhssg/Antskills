@@ -67,3 +67,33 @@ def render_conclusion_plain(top1: dict, risk: str) -> str:
         f"{top1.get('prob', 0) * 100:.1f}%。"
         f"该价位{direction}当前价 {top1.get('distance', 0)}%。"
     )
+
+
+async def call_llm(user_ctx: dict, ta: dict, top3: list, all_count: int) -> dict:
+    """Template-mode compatibility wrapper for the orchestrator."""
+    if not top3:
+        risk = user_ctx.get("risk", "balanced")
+        return {
+            "mode": "template",
+            "html": render_conclusion({}, risk),
+            "plain": render_conclusion_plain({}, risk),
+            "count": all_count,
+        }
+
+    top1 = top3[0] if top3 else {}
+    normalized = {
+        "platform": top1.get("platform", ""),
+        "strike": top1.get("strike", 0),
+        "apr": top1.get("apr", 0),
+        "duration": top1.get("duration_days", top1.get("duration", 0)),
+        "prob": top1.get("touch_prob", top1.get("prob", 0)),
+        "distance": round(top1.get("distance_pct", 0) * 100, 1) if "distance_pct" in top1 else top1.get("distance", 0),
+        "side": "sell" if top1.get("side") in ["sell_high", "sell"] else "buy",
+    }
+    risk = user_ctx.get("risk", "balanced")
+    return {
+        "mode": "template",
+        "html": render_conclusion(normalized, risk),
+        "plain": render_conclusion_plain(normalized, risk),
+        "count": all_count,
+    }
