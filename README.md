@@ -68,7 +68,7 @@ Each skill is a standalone package. Most packages include:
 - `README.md` / `README.zh.md`
 - `agents/openai.yaml`
 - `assets/`
-- optional `references/`, `scripts/`, `templates/`, `docs/`, `tests/`
+- optional `references/`, `scripts/`, `templates/`, `docs/`, `tests/`, `methodology/`, `sop/`, `quality/`, `prompts/`
 - `VERSION`
 
 
