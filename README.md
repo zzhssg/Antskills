@@ -70,3 +70,23 @@ Each skill is a standalone package. Most packages include:
 - `assets/`
 - optional `references/`, `scripts/`, `templates/`, `docs/`, `tests/`
 - `VERSION`
+
+
+### 5. `antskill-creator`
+Spec-first operating system for designing, prototyping, specifying, packaging, reviewing, and publishing standalone skills.
+
+> Status: **production-ready package**
+>
+> Unlike a generic skill factory, this package ships a full creation system: paradigm selection, stage-gated workflow, 4-layer architecture discipline, source-of-truth arbitration, quality gates, reusable templates, and real case-study packages.
+
+What is already strong:
+- 3 paradigms (`A / B / C`) for implementation-first, spec-first, and dual-mode outputs
+- 6-stage workflow (`S1 → S6`) with explicit quality gates
+- 4-layer runtime architecture (`L1 → L4`)
+- 9 reference document templates and reusable packaging assets
+- 4 example packages, including tested DualYield (`32/32`) and Yield Desk (`16/16`)
+
+What makes it different:
+- not just prompt scaffolding
+- enforces methodology and source-of-truth discipline
+- designed for GitHub-shareable, engineer-friendly skill packages
