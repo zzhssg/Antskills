@@ -1,6 +1,6 @@
 # AntSkill Creator
 
-A structured operating system for moving a skill from requirements to a deliverable package.
+A structured production system for moving a skill from requirements to a deliverable package.
 
 [![X](https://img.shields.io/badge/Follow-%40Antseer__ai-black?logo=x&logoColor=white)](https://x.com/Antseer_ai) [![Telegram](https://img.shields.io/badge/Telegram-AntseerGroup-2CA5E0?logo=telegram&logoColor=white)](https://t.me/AntseerGroup) [![GitHub](https://img.shields.io/badge/GitHub-antseer--dev-181717?logo=github&logoColor=white)](https://github.com/antseer-dev/OpenWeb3Data_MCP) [![Medium](https://img.shields.io/badge/Medium-antseer-000000?logo=medium&logoColor=white)](https://medium.com/@antseer/)
 
@@ -12,9 +12,9 @@ English | [简体中文](README.zh.md)
 
 | Mechanism | Purpose | File |
 |------|------|----------|
-| Paradigm selection | Distinguishes implementation-first (A), spec-first (B), and dual-mode (C) skills | `methodology/paradigms.md` |
-| S1–S6 stage gates | Requirements → prototype → refinement → PRD → delivery → review, each with entry/exit rules | `sop/`, `quality/gates.md` |
-| 4-layer pipeline | Separates data, compute, decision, and rendering | `prompts/layer_design_guides.md` |
+| Paradigm classification | Distinguishes implementation-first (A), spec-first (B), and dual-mode (C) skills, each with a different workflow | `methodology/paradigms.md` |
+| S1–S6 stage gates | Requirements → prototype → refinement → PRD → delivery → review, each with entry and exit criteria | `sop/`, `quality/gates.md` |
+| 4-layer pipeline | Separates data, compute, decision, and rendering to avoid logic coupling | `prompts/layer_design_guides.md` |
 | Source-of-truth arbitration | Defines precedence when PRD, API spec, prompts, and demo conflict | `methodology/source-of-truth.md` |
 | Production / Prototype boundary | Separates visual reference from production contract | `methodology/responsibility-split.md` |
 
@@ -30,24 +30,6 @@ English | [简体中文](README.zh.md)
 | Yield Desk PRD | 1060 lines |
 | DualYield tests | 32/32 passed |
 | Yield Desk tests | 16/16 passed |
-
-## Architecture
-
-```mermaid
-flowchart LR
-  S1["S1 Requirements"] --> S2["S2 Prototype"]
-  S2 --> S3["S3 Refinement"]
-  S3 --> S4["S4 PRD / Spec"]
-  S4 --> S5["S5 Delivery"]
-  S5 --> S6["S6 Review"]
-```
-
-```mermaid
-flowchart TB
-  L1["L1 Data\nAPI / MCP / mapping / fallback"] --> L2["L2 Compute\nfilter / normalize / score / rank"]
-  L2 --> L3["L3 Decision\nLLM + fallback"]
-  L3 --> L4["L4 Rendering\ncomponents / props / visual proof"]
-```
 
 ## Directory structure
 
@@ -70,15 +52,11 @@ Includes product spec, pipeline code, frontend prototype, tests, and technical o
 
 Path: `examples/dualyield/`
 
-![DualYield example screenshot](assets/screenshots/dualyield-example.png)
-
 ### Yield Desk — C paradigm (handoff-heavy)
 
 Includes a 1060-line layered PRD, high-fidelity frontend prototype, and engineering handoff docs. L2 tests pass 16/16.
 
 Path: `examples/yield-desk/`
-
-![Yield Desk example screenshot](assets/screenshots/yield-desk-example.png)
 
 ### SeerClaw Ref — B paradigm (spec-first)
 
@@ -107,9 +85,9 @@ Internal flow: classify paradigm → collect requirements → prototype → refi
 
 ## Best fit
 
-**Good for:** teams that need product clarity, engineering handoff quality, and reusable skill methodology.
+**Good for:** skill production that needs both product clarity and engineering implementability; teams that need end-to-end demo/PRD/package/review management; reusable skill methodology.
 
-**Not good for:** throwaway personal skills or one-shot prompt scaffolding.
+**Not good for:** throwaway one-off skills; personal experiments that do not need review or packaging discipline.
 
 ---
 
